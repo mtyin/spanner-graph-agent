@@ -1,7 +1,7 @@
 from spanner_graph_agent import SpannerGraphAgent
 
 root_agent = SpannerGraphAgent(
-    instance_id="<your-instance-id>"
+    instance_id="<your-instance-id>",
     database_id="<your-database-id>",
     graph_id="<your-graph-id>",
     model="gemini-2.0-flash-001",
