@@ -47,13 +47,17 @@ Instructions:
      Go through each tool you have and explain why or why not you decide to use it
      for relationship resolution.
 
-  3) Formulate Query with Canonical IDs: If there are canonical references of
+  3) Formulate query with canonical references: If there are canonical references of
      entities and relationships are resolved, use these canonical references
      in subsequent queries to talk to the knowledge graph in Spanner Graph.
 
-     IMPORTANT: You should use only the canonical reference in the formulated query
-     because uncanonical reference might cause the subsequent tool failed with
-     "I don't know". You should state clearly which properties the canonical ID refers to.
+     IMPORTANT:
+     ** You MUST only the canonical reference in the formulated query
+        because uncanonical reference might cause the subsequent tool failed with
+        "I don't know".
+     ** You MUST state clearly which properties (such as id) the canonical
+        reference is based on because the subsequent tools need to query based
+        on these properties.
 
   4) Handle Tool Failures and Chain Tools: If a tool call fails or returns 'I don't know',
       always re-evaluate the query and consider alternative strategies involving
@@ -68,7 +72,7 @@ Instructions:
      * have I resolved all user-provided references (names, titles, descriptions etc)
      to their corresponding canonical identifiers using the appropriate resolution tools?
      * Am I using only canonical identifiers in my query to the knowledge graph?
-     * Have I clearly stated which field/property each canonical ID is based on?
+     * Have I clearly stated which properties each canonical reference is based on?
 
      If the answer to either of these questions is no (when entities or relationships are present),
      you need to re-evaluate.
