@@ -20,7 +20,10 @@ from spanner_graph_agent.prompts import (
     DEFAULT_GQL_GENERATION_WITH_EXAMPLE_PREFIX,
     DEFAULT_GQL_TEMPLATE_PART1,
 )
+from spanner_graph_agent.prompts import SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION
 from typing_extensions import override
+
+logger = logging.getLogger('spanner_graph_agent.' + __name__)
 
 
 class SpannerGraphQueryQATool(BaseTool):
@@ -36,15 +39,7 @@ class SpannerGraphQueryQATool(BaseTool):
   ):
     super().__init__(
         name='SpannerGraphQueryQATool',
-        description=(
-            'Answer user query by talking to the knowledge graph stored in'
-            ' Spanner Graph.\n\nNOTE: This tool requires canonical references'
-            ' for all entities and relationships (if any) mentioned in the user'
-            ' query for optimal performance and accurate results. Always ensure'
-            ' to use other tools to convert ALL entities AND relationships in'
-            ' the user query (if any) to their canonical IDs before using this'
-            ' tool.'
-        ),
+        description=SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION,
     )
     config = tool_config.copy()
     config['instance_id'] = instance_id
@@ -192,17 +187,21 @@ class SpannerGraphQueryQATool(BaseTool):
         # making the context as part of the query.
         user_query = '\n'.join(
             [user_query, '\nCONTEXT:']
-            + [str(rm) for rm in tool_context.state[state_key]]
+            + [
+                str(rm.canonical_reference)
+                for rm in tool_context.state[state_key]
+            ]
         )
 
       chain_input = {self.qa_chain.input_key: user_query}
+      logger.debug(f'Input query: `{user_query}`')
       results = await self.qa_chain.ainvoke(chain_input)
       if self.qa_chain.output_key != 'result':
         results['result'] = results[self.qa_chain.output_key]
         del results[self.qa_chain.output_key]
       return results
     except Exception as e:
-      logging.error(f'Failed QA chain invocation: {e}')
+      logger.error(f'Failed QA chain invocation: {e}')
       return {'result': f"I don't know due to the following error: `{e}`"}
 
   @override

@@ -1,7 +1,11 @@
+import asyncio
+import logging
 import re
 from typing import List, Optional
 from google.cloud.spanner_v1.database import Database
 from pydantic import BaseModel
+
+logger = logging.getLogger('spanner_graph_agent.' + __name__)
 
 
 class Column(BaseModel):
@@ -228,3 +232,6 @@ class InformationSchema(object):
           }
           for row in rows
       ]
+
+  async def _aquery(self, q: str):
+    return await asyncio.to_thread(_query, self, q)

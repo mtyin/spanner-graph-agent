@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any, Optional, Union
 from google.adk.agents import LlmAgent
@@ -14,6 +15,8 @@ from spanner_graph_agent.utils.information_schema import (
     InformationSchema,
     PropertyGraph,
 )
+
+logger = logging.getLogger('spanner_graph_agent.' + __name__)
 
 
 class SpannerGraphAgent(LlmAgent):
@@ -33,6 +36,7 @@ class SpannerGraphAgent(LlmAgent):
   ):
     client = spanner.Client(project=project_id)
     database = client.instance(instance_id).database(database_id)
+    self._config_log_level(agent_config)
     tools = self.build_index_tools(database, graph_id, agent_config)
     gql_query_tool = SpannerGraphQueryQATool(
         instance_id,
@@ -42,8 +46,9 @@ class SpannerGraphAgent(LlmAgent):
         client,
         agent_config,
     )
+
     for tool in tools:
-      logging.info(
+      logger.info(
           f'Tool: {tool.name}\n' + f'Description: {tool.description}\n\n'
       )
     super().__init__(
@@ -53,6 +58,14 @@ class SpannerGraphAgent(LlmAgent):
         instruction=instruction or SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
         gql_query_tool=gql_query_tool,
         tools=tools + [gql_query_tool],
+    )
+
+  def _config_log_level(self, agent_config: dict[str, Any]):
+    log_level = agent_config.get(
+        'log_level', 'DEBUG' if agent_config.get('verbose') else 'INFO'
+    )
+    logging.getLogger('spanner_graph_agent').setLevel(
+        getattr(logging, log_level.upper())
     )
 
   def build_index_tools(
@@ -98,7 +111,7 @@ class SpannerGraphAgent(LlmAgent):
           index.table.name.casefold(), {}
       )
       if not label_with_aliases:
-        logging.info(f'Skipped index: {index.name}')
+        logger.info(f'Skipped index: {index.name}')
         continue
       for label_name, column_aliases in label_with_aliases.items():
         tool = SpannerFullTextSearchTool.build_from_index(
@@ -108,10 +121,10 @@ class SpannerGraphAgent(LlmAgent):
             column_aliases,
         )
         if not tool:
-          logging.info(f'Skipped index for label `{label_name}`: {index.name}')
+          logger.info(f'Skipped index for label `{label_name}`: {index.name}')
           continue
 
-        logging.info(
+        logger.info(
             f'Added a tool built for label `{label_name}` from the index:'
             f' {index.name}'
         )

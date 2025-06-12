@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field, create_model
 from spanner_graph_agent.utils.information_schema import Column, Index
 from typing_extensions import override
 
+logger = logging.getLogger('spanner_graph_agent.' + __name__)
+
 
 # column AS alias
 class ColumnWithAlias(BaseModel):
@@ -158,7 +160,7 @@ def _create_model(
   for column in columns:
     t = _get_python_type_from_spanner_type(column.column.type)
     if t is None:
-      logging.warning(
+      logger.warning(
           f'Column {column.column.name} of type {column.column.type} is not'
           ' supported'
       )
@@ -200,7 +202,7 @@ def _query(database, query, params=None):
           for row in rows
       ]
   except Exception as e:
-    logging.error(f'Query failed: `{e}`')
+    logger.error(f'Query failed: `{e}`')
   return []
 
 
@@ -219,7 +221,7 @@ def _get_example_reference(
   example_reference, example_canonical_reference = None, None
   values = _query(database, query)
   if not values:
-    logging.error('No example found by the query')
+    logger.error('No example found by the query')
     return None, None
 
   value = values[0]
@@ -234,7 +236,7 @@ def _get_example_reference(
     )
     return example_reference, example_canonical_reference
   except Exception as e:
-    logging.error(f'Failed to build example: `{e}`')
+    logger.error(f'Failed to build example: `{e}`')
     return None, None
 
 
@@ -272,8 +274,10 @@ def _build_full_text_search_function_description(
     example_doc = """
     For example,
       Given %s, this tool may return a mapping to %s.
+      %s should be used in subsequent queries to the knowledge graph.
     """ % (
         repr(input_model_example),
+        repr(output_model_example),
         repr(output_model_example),
     )
   return (
@@ -286,8 +290,9 @@ def _build_full_text_search_function_description(
 
     {example_doc}
 
-    The canonical reference should be used to talk to the knowledge graph in Spanner Graph.
-    This function is usually called before talking to Spanner Graph.
+    This tool convert user-provided references (names, descriptions, titles, etc.)
+    into their corresponding canonical identifiers. The output of these tools
+    (the canonical ID) must be used in subsequent queries to the knowledge graph.
   """,
   )
 
@@ -300,7 +305,7 @@ def _build_search_criterias(
   search_criterias = []
   for col in tokenlist_cols:
     if col.expr is None:
-      logging.warning(
+      logger.warning(
           f'No expr found for tokenlist column definition: {col.name}'
       )
       return None
@@ -310,7 +315,7 @@ def _build_search_criterias(
         re.IGNORECASE,
     )
     if match is None:
-      logging.warning(f'Tokenlist definition `{col.expr}` is not supported')
+      logger.warning(f'Tokenlist definition `{col.expr}` is not supported')
       return None
 
     token_function = match.group(1)
@@ -324,14 +329,14 @@ def _build_search_criterias(
       search_function = 'search_ngrams'
       score_function = 'score_ngrams'
     else:
-      logging.warning(f'Token function {token_function} is not supported')
+      logger.warning(f'Token function {token_function} is not supported')
       return None
 
     tokenized_column_name = match.group(2)
     tokenized_column = table_cols[tokenized_column_name.casefold()]
     alias = _get_alias(tokenized_column_name, column_aliases)
     if alias is None:
-      logging.debug(
+      logger.debug(
           f'No alias found for `{tokenized_column_name}` of `{table_alias}'
       )
       return None
@@ -362,7 +367,7 @@ def _build_column_with_aliases(
     column = table_cols[column_name.casefold()]
     alias = _get_alias(column_name, column_aliases)
     if alias is None:
-      logging.debug(f'No alias found for `{column.name}` of `{table_alias}')
+      logger.debug(f'No alias found for `{column.name}` of `{table_alias}')
       return None
     column_with_aliases.append(
         ColumnWithAlias(
@@ -398,18 +403,18 @@ def _build_full_text_search_function(
       table_alias, index.search_partition_by, table_cols, column_aliases
   )
   Reference = _create_model(
-      f'{table_alias}ReferenceInUserQuery',
+      f'UserProvided{table_alias}Reference',
       partition_columns_with_aliases
       + [criteria.tokenized_column for criteria in search_criterias],
   )
 
   if Reference is None:
-    logging.warning(
-        f'Unable to build {table_alias}ReferenceInUserQuery data model'
+    logger.warning(
+        f'Unable to build UserProvided{table_alias}Reference data model'
     )
     return None
-  logging.debug(
-      f'Built {table_alias}ReferenceInUserQuery data model:\n'
+  logger.debug(
+      f'Built UserProvided{table_alias}Reference data model:\n'
       + str(Reference.model_json_schema())
       + '\n'
   )
@@ -432,14 +437,14 @@ def _build_full_text_search_function(
       if field.alias not in Reference.model_fields
   ]
   CanonicalReference = _create_model(
-      f'{table_alias}CanonicalReference', canonical_reference_fields
+      f'Canonical{table_alias}Reference', canonical_reference_fields
   )
   if CanonicalReference is None:
-    logging.warning(
+    logger.warning(
         f'Unable to build {table_alias}CanonicalReference data model'
     )
     return None
-  logging.debug(
+  logger.debug(
       f'Built {table_alias}CanonicalReference data model:\n'
       + str(CanonicalReference.model_json_schema())
       + '\n'
@@ -463,7 +468,7 @@ def _build_full_text_search_function(
       index_filter_expr=index.filter,
       canonical_reference_columns=canonical_reference_fields,
   )
-  logging.debug(f'Built search query:\n\n{search_query}\n\n')
+  logger.debug(f'Built search query:\n\n{search_query}\n\n')
 
   example_query = _build_example_query(
       table_name=index.table.name,
@@ -472,7 +477,7 @@ def _build_full_text_search_function(
       index_filter_expr=index.filter,
       canonical_reference_columns=canonical_reference_fields,
   )
-  logging.debug(f'Built example query:\n\n{example_query}\n\n')
+  logger.debug(f'Built example query:\n\n{example_query}\n\n')
 
   async def resolve_canonical_reference(
       references: List[Reference],
@@ -482,7 +487,7 @@ def _build_full_text_search_function(
       for i in range(len(references)):
         if isinstance(references[i], dict):
           references[i] = Reference(**references[i])
-      logging.debug(f'Resolving: {references}...')
+      logger.debug(f'Resolving: {references}...')
 
       results = []
       for reference in references:
@@ -497,7 +502,7 @@ def _build_full_text_search_function(
               )
           )
     except Exception as e:
-      logging.error('Failed to find relevant entities: %s' % e)
+      logger.error('Failed to find relevant entities: %s' % e)
       results = []
 
     key = 'temp:reference_mappings'
@@ -505,7 +510,7 @@ def _build_full_text_search_function(
       tool_context.state[key].extend(results)
     else:
       tool_context.state[key] = results
-    logging.debug(f'Resolved reference_mappings: {results}')
+    logger.debug(f'Resolved reference_mappings: {results}')
     return results
 
   example_reference, example_canonical_reference = _get_example_reference(
