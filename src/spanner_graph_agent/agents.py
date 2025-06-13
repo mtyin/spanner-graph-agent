@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from typing import Any, Optional, Union
 from google.adk.agents import LlmAgent
@@ -7,6 +8,7 @@ from google.cloud.spanner_v1.database import Database
 from spanner_graph_agent.prompts import (
     SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION,
     SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
+    SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE,
 )
 from spanner_graph_agent.tools.index_tools import SpannerFullTextSearchTool
 from spanner_graph_agent.tools.langchain_tools import SpannerGraphQueryQATool
@@ -37,12 +39,23 @@ class SpannerGraphAgent(LlmAgent):
     client = spanner.Client(project=project_id)
     database = client.instance(instance_id).database(database_id)
     self._config_log_level(agent_config)
-    tools = self.build_index_tools(database, graph_id, agent_config)
+    information_schema = InformationSchema(database)
+    property_graph = information_schema.get_property_graph(graph_id)
+    tools = self.build_index_tools(
+        database, information_schema, property_graph, agent_config
+    )
+    gql_query_tool_description = (
+        SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE.format(
+            node_labels=json.dumps(property_graph.get_node_labels(), indent=1),
+            edge_labels=json.dumps(property_graph.get_edge_labels(), indent=1),
+        )
+    )
     gql_query_tool = SpannerGraphQueryQATool(
         instance_id,
         database_id,
         graph_id,
         model,
+        gql_query_tool_description,
         client,
         agent_config,
     )
@@ -71,11 +84,12 @@ class SpannerGraphAgent(LlmAgent):
   def build_index_tools(
       self,
       database: Database,
-      graph_id: str,
+      information_schema: InformationSchema,
+      graph: PropertyGraph,
       agent_config: dict[str, Any],
   ):
-    information_schema = InformationSchema(database)
-    graph = information_schema.get_property_graph(graph_id)
+    enabled_indexes = agent_config.get('indexes_as_tools')
+    all_search_indexes = information_schema.get_search_indexes(enabled_indexes)
     properties_by_label = {
         label.name: label.property_declaration_names for label in graph.labels
     }
@@ -106,7 +120,7 @@ class SpannerGraphAgent(LlmAgent):
         )
 
     tools = []
-    for index in information_schema.get_search_indexes():
+    for index in all_search_indexes:
       label_with_aliases = label_with_aliases_by_table.get(
           index.table.name.casefold(), {}
       )

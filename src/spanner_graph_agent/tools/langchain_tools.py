@@ -20,7 +20,6 @@ from spanner_graph_agent.prompts import (
     DEFAULT_GQL_GENERATION_WITH_EXAMPLE_PREFIX,
     DEFAULT_GQL_TEMPLATE_PART1,
 )
-from spanner_graph_agent.prompts import SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION
 from typing_extensions import override
 
 logger = logging.getLogger('spanner_graph_agent.' + __name__)
@@ -34,12 +33,13 @@ class SpannerGraphQueryQATool(BaseTool):
       database_id: str,
       graph_id: str,
       llm: Union[str, BaseLanguageModel],
+      description: str,
       client: Optional[spanner.Client] = None,
       tool_config: dict[str, Any] = {},
   ):
     super().__init__(
         name='SpannerGraphQueryQATool',
-        description=SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION,
+        description=description,
     )
     config = tool_config.copy()
     config['instance_id'] = instance_id
@@ -180,19 +180,6 @@ class SpannerGraphQueryQATool(BaseTool):
   ) -> dict[str, Any]:
     try:
       user_query = args['user_query']
-
-      state_key = 'temp:reference_mappings'
-      if state_key in tool_context.state:
-        # TODO: QA agent should support structured context input instead of
-        # making the context as part of the query.
-        user_query = '\n'.join(
-            [user_query, '\nCONTEXT:']
-            + [
-                str(rm.canonical_reference)
-                for rm in tool_context.state[state_key]
-            ]
-        )
-
       chain_input = {self.qa_chain.input_key: user_query}
       logger.debug(f'Input query: `{user_query}`')
       results = await self.qa_chain.ainvoke(chain_input)

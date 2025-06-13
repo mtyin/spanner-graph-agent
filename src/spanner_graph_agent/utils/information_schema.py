@@ -8,6 +8,17 @@ from pydantic import BaseModel
 logger = logging.getLogger('spanner_graph_agent.' + __name__)
 
 
+class JsonField(BaseModel):
+  key: str
+  type: str
+
+
+class JsonSchema(BaseModel):
+  schema_object_name: str
+  json_object_name: str
+  json_fields: List[JsonField]
+
+
 class Column(BaseModel):
   name: str
   type: str
@@ -45,9 +56,8 @@ class PropertyDefinition(BaseModel):
   expr: str
 
 
-# TODO: Add support for node references.
 class NodeReference(BaseModel):
-  pass
+  node_name: str
 
 
 class GraphElement(BaseModel):
@@ -66,6 +76,25 @@ class PropertyGraph(BaseModel):
   edges: List[GraphElement]
   labels: List[Label]
   property_declarations: List[PropertyDeclaration]
+
+  def get_node_labels(self):
+    return list({label for node in self.nodes for label in node.label_names})
+
+  def get_edge_labels(self):
+    node_labels = {
+        node.name.casefold(): node.label_names for node in self.nodes
+    }
+    return list({
+        (src_node_label, edge_label, dst_node_label)
+        for edge in self.edges
+        for edge_label in edge.label_names
+        for src_node_label in node_labels[
+            edge.source_node_reference.node_name.casefold()
+        ]
+        for dst_node_label in node_labels[
+            edge.dest_node_reference.node_name.casefold()
+        ]
+    })
 
 
 class InformationSchema(object):
@@ -89,9 +118,13 @@ class InformationSchema(object):
         ],
     )
 
-  def get_search_indexes(self) -> List[Index]:
+  def get_search_indexes(
+      self, enabled_indexes: Optional[List[str]] = None
+  ) -> List[Index]:
     indexes = []
-    for index_config in self._query(self._get_search_index_query()):
+    for index_config in self._query(
+        self._get_search_index_query(enabled_indexes)
+    ):
       columns = [
           Column(name=name, type=type, expr=expr)
           for (name, type, expr) in index_config['columns']
@@ -107,6 +140,69 @@ class InformationSchema(object):
       )
       indexes.append(index)
     return indexes
+
+  def get_json_property_schema_in_property_graph(
+      self,
+      graph: PropertyGraph,
+      json_schema_included_properties: Optional[List[str]] = None,
+  ) -> List[JsonSchema]:
+
+    included_properties = (
+        {name.casefold() for name in json_schema_included_properties}
+        if json_schema_included_properties
+        else None
+    )
+    property_types = {
+        prop.name.casefold(): prop.type
+        for prop in graph.property_declarations
+        if included_properties is None
+        or prop.name.casefold() in included_properties
+    }
+    label_properties = {
+        label.name.casefold(): label.property_declaration_names
+        for label in graph.labels
+    }
+    results = []
+    for node in graph.nodes:
+      for label_name in node.label_names:
+        for property_name in label_properties.get(label_name.casefold(), []):
+          if property_types.get(property_name.casefold()) != 'JSON':
+            continue
+          results.append(
+              JsonSchema(
+                  schema_object_name=label_name,
+                  json_object_name=property_name,
+                  json_fields=[
+                      JsonField(**row)
+                      for row in self._query(
+                          self._get_node_json_property_schema_query(
+                              graph.name, label_name, property_name
+                          )
+                      )
+                  ],
+              )
+          )
+
+    for edge in graph.edges:
+      for label_name in edge.label_names:
+        for property_name in label_properties.get(label_name.casefold(), []):
+          if property_types.get(property_name.casefold()) != 'JSON':
+            continue
+          results.append(
+              JsonSchema(
+                  schema_object_name=label_name,
+                  json_object_name=property_name,
+                  json_fields=[
+                      JsonField(**row)
+                      for row in self._query(
+                          self._get_edge_json_property_schema_query(
+                              graph.name, label_name, property_name
+                          )
+                      )
+                  ],
+              )
+          )
+    return results
 
   def get_property_graph(self, name: str) -> Optional[PropertyGraph]:
     results = self._query(self._get_property_graph_query(name))
@@ -157,6 +253,12 @@ class InformationSchema(object):
                 )
                 for pdef in edge.get('propertyDefinitions', [])
             ],
+            source_node_reference=NodeReference(
+                node_name=edge['sourceNodeTable']['nodeTableName']
+            ),
+            dest_node_reference=NodeReference(
+                node_name=edge['destinationNodeTable']['nodeTableName']
+            ),
         )
         for edge in graph_json.get('edgeTables', [])
     ]
@@ -195,7 +297,9 @@ class InformationSchema(object):
     WHERE table.TABLE_NAME = '{table_name}'
     """
 
-  def _get_search_index_query(self):
+  def _get_search_index_query(
+      self, enabled_indexes: Optional[List[str]] = None
+  ):
     return """
   SELECT INDEX_NAME AS name,
          INDEX_TYPE AS type,
@@ -218,7 +322,44 @@ class InformationSchema(object):
                      "search_partition_by", index.SEARCH_PARTITION_BY,
                      "search_order_by", index.SEARCH_ORDER_BY) AS details
   FROM INFORMATION_SCHEMA.INDEXES AS index
-  WHERE index.INDEX_TYPE = 'SEARCH' AND index.IS_UNIQUE"""
+  WHERE index.INDEX_TYPE = 'SEARCH' AND index.IS_UNIQUE
+    AND %s """ % (
+        f'index.name IN UNNEST([{enabled_indexes}])'
+        if enabled_indexes is not None
+        else 'TRUE'
+    )
+
+  def _get_node_json_property_schema_query(
+      self, graph_id: str, label_name: str, property_name: str
+  ):
+    return f"""
+    GRAPH {graph_id}
+    MATCH (n:{label_name})
+    WHERE n.{property_name} IS NOT NULL
+    LET j = n.{property_name}
+    TABLESAMPLE RESERVOIR (1 ROWS)
+    LET keys = JSON_KEYS(j, 1)
+    FOR key IN keys
+    LET v = j[key]
+    LET type = json_type(v)
+    RETURN key, type
+    """
+
+  def _get_edge_json_property_schema_query(
+      self, graph_id: str, label_name: str, property_name: str
+  ):
+    return f"""
+    GRAPH {graph_id}
+    MATCH -[n:{label_name}]->
+    WHERE n.{property_name} IS NOT NULL
+    LET j = n.{property_name}
+    TABLESAMPLE RESERVOIR (1 ROWS)
+    LET keys = JSON_KEYS(j, 1)
+    FOR key IN keys
+    LET v = j[key]
+    let type = json_type(v)
+    RETURN key, type
+    """
 
   def _query(self, q: str):
     with self.database.snapshot() as snapshot:

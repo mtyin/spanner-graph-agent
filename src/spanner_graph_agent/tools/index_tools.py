@@ -384,7 +384,7 @@ def _build_full_text_search_function(
     table_alias: Optional[str] = None,
     column_aliases: Optional[Dict[str, str]] = None,
     include_all_index_fields=False,
-) -> Optional[Callable[[BaseModel], BaseModel]]:
+) -> Optional[Callable[[BaseModel, ...], BaseModel]]:
 
   table_alias = table_alias or index.table.name
   tokenlist_cols = [col for col in index.columns if col.type == 'TOKENLIST']

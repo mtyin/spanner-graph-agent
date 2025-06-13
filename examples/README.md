@@ -5,6 +5,10 @@
    Create a `.env` file in the examples directory:
 
    ```
+   GCP_PROJECT=<your-project>
+   SPANNER_INSTANCE=<your-instance>
+   SPANNER_DATABASE=<your-database>
+   SPANNER_GRAPH=<your-graph>
    GOOGLE_GENAI_USE_VERTEXAI=TRUE
    GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID
    GOOGLE_CLOUD_LOCATION=LOCATION
