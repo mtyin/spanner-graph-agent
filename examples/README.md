@@ -5,13 +5,12 @@
    Create a `.env` file in the examples directory:
 
    ```
-   GCP_PROJECT=<your-project>
-   SPANNER_INSTANCE=<your-instance>
-   SPANNER_DATABASE=<your-database>
-   SPANNER_GRAPH=<your-graph>
+   GOOGLE_CLOUD_PROJECT=<your-project-id>
+   GOOGLE_SPANNER_INSTANCE=<your-instance>
+   GOOGLE_SPANNER_DATABASE=<your-database>
+   GOOGLE_SPANNER_GRAPH=<your-graph>
    GOOGLE_GENAI_USE_VERTEXAI=TRUE
-   GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID
-   GOOGLE_CLOUD_LOCATION=LOCATION
+   GOOGLE_CLOUD_LOCATION=<your-location>
    ```
 
 2) Install the library

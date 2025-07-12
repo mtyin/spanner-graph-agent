@@ -5,6 +5,7 @@ requires-python = ">=3.9"
 dependencies = [
     "langchain-google-spanner",
     "google-adk",
+    "pandas",
 ]
 classifiers = [
     "Intended Audience :: Developers",

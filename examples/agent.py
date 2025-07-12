@@ -2,11 +2,11 @@ import os
 from spanner_graph_agent import SpannerGraphAgent
 
 root_agent = SpannerGraphAgent(
-    instance_id=os.environ["SPANNER_INSTANCE"],
-    database_id=os.environ["SPANNER_DATABASE"],
-    graph_id=os.environ["SPANNER_GRAPH"],
+    instance_id=os.environ["GOOGLE_SPANNER_INSTANCE"],
+    database_id=os.environ["GOOGLE_SPANNER_DATABASE"],
+    graph_id=os.environ["GOOGLE_SPANNER_GRAPH"],
     model="gemini-2.5-flash",
-    project_id=os.environ["GCP_PROJECT"],
+    project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", None),
     agent_config={
         "example_table": "gql_examples",
         "embedding": "text-embedding-004",
