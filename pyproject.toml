@@ -6,6 +6,7 @@ dependencies = [
     "langchain-google-spanner",
     "google-adk",
     "pandas",
+    "pyyaml",
 ]
 classifiers = [
     "Intended Audience :: Developers",

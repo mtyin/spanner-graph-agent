@@ -150,6 +150,11 @@ with tempfile.TemporaryDirectory() as temp_dir:
     # Copy schema.ddl to the data directory
     shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.ddl"), data_dir)
 
+    # Copy evaluation directory if it exists
+    evaluation_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "evaluation")
+    if os.path.exists(evaluation_dir):
+      shutil.copytree(evaluation_dir, os.path.join(data_dir, "evaluation"))
+
     # Create a gzipped tarball of the data
     shutil.make_archive("finance_data", 'gztar', data_dir, ".")
 

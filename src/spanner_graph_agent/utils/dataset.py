@@ -1,12 +1,18 @@
+import asyncio
 import logging
 import os
 import shutil
+import string
 import tarfile
 import tempfile
-from typing import Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+from google.adk.agents import BaseAgent
 from google.cloud import spanner
 from google.cloud.spanner_v1.database import Database
 import pandas as pd
+from spanner_graph_agent.utils.agent_session import AgentSession
+import yaml
 
 logger = logging.getLogger("spanner_graph_agent." + __name__)
 
@@ -31,6 +37,7 @@ class Dataset(object):
     self.delimiter = delimiter
     self._is_compressed = self.path.endswith(".tar.gz")
     self._temp_dir = None
+    self.parameter_providers = {}
 
   def is_compressed(self) -> bool:
     return self._is_compressed
@@ -137,7 +144,7 @@ class Dataset(object):
       if self._temp_dir is None:
         self._temp_dir = tempfile.mkdtemp()
         with tarfile.open(self.path, "r:gz") as tar:
-          tar.extractall(self._temp_dir)
+          tar.extractall(self._temp_dir, filter="tar")
       return os.path.join(self._temp_dir, component)
     else:
       return os.path.join(self.path, component)
@@ -159,3 +166,186 @@ class Dataset(object):
             columns=df.columns.tolist(),
             values=df.iloc[start:end].values.tolist(),
         )
+
+  def register_parameter_provider(
+      self, name: str, provider: Callable[[], Tuple[Any, Any]]
+  ):
+    self.parameter_providers[name] = provider
+
+  def instantiate_parameters(self, question_template: str) -> str:
+    params = {}
+    param_types = {}
+    for _, param_name, _, _ in string.Formatter().parse(question_template):
+      if not param_name:
+        continue
+      provider = self.parameter_providers.get(param_name)
+      if provider is None:
+        raise ValueError(f"Unable to provider param with name `{param_name}`")
+      params[param_name], param_types[param_name] = provider()
+    return params, param_types
+
+  def load_evalution_templates(self) -> Dict[str, List[List[str]]]:
+    return self._load_yaml_file("./evaluation/templates.yaml")
+
+  def _load_yaml_file(self, file_path: str) -> Dict[str, Any]:
+    if self.is_compressed():
+      with tarfile.open(self.path, "r:gz") as tar:
+        template_file = tar.extractfile(file_path)
+        return yaml.safe_load(template_file)
+    else:
+      with open(os.path.join(self.path, file_path), "r") as f:
+        return yaml.safe_load(f)
+
+  async def get_agent_answers(
+      self, agent: BaseAgent, questions: List[str]
+  ) -> List[Any]:
+    agent_answers = []
+    for question in questions:
+      with AgentSession(agent, user_id="evalution") as session:
+        event = await session.ainvoke(question)
+        answer = "n/a"
+        if event and event.content and event.content.parts:
+          answer = "".join((part.text or "" for part in event.content.parts))
+        agent_answers.append({
+            "question": question,
+            "answer": answer,
+        })
+    return agent_answers
+
+  async def get_answer(
+      self,
+      database: Database,
+      answer_query_template: str,
+      params: Dict[str, Any],
+      param_types: Dict[str, Any],
+  ) -> Any:
+    if not answer_query_template:
+      return []
+
+    def _query():
+      with database.snapshot() as snapshot:
+        rows = snapshot.execute_sql(
+            answer_query_template,
+            params=params,
+            param_types=param_types,
+        )
+        return [
+            {
+                column: value
+                for column, value in zip(
+                    [column.name for column in rows.fields], row
+                )
+            }
+            for row in rows
+        ]
+
+    return await asyncio.to_thread(_query)
+
+  async def evaluate_qa(
+      self,
+      agent: BaseAgent,
+      database: Database,
+      question_templates: List[str],
+      answer_query_template: Optional[str],
+  ) -> Dict:
+    params, param_types = self.instantiate_parameters(question_templates[0])
+    questions = [q.format_map(params) for q in question_templates]
+    result = {}
+    if answer_query_template:
+      result["reference_answer"] = await self.get_answer(
+          database, answer_query_template, params, param_types
+      )
+    result["agent_answers"] = await self.get_agent_answers(agent, questions)
+    return result
+
+  def validate_param_providers(self, all_templates):
+    validated_params = set()
+    for templates in all_templates.values():
+      for template in templates:
+        questions = template.get("Questions", [])
+        for question in questions:
+          for _, param_name, _, _ in string.Formatter().parse(question):
+            if param_name is None:
+              continue
+            if param_name in validated_params:
+              continue
+            if param_name not in self.parameter_providers:
+              raise ValueError(f"Missing param provider for `{param_name}`")
+            validated_params.add(param_name)
+    return validated_params
+
+  async def evaluate(
+      self,
+      agent: BaseAgent,
+      instance: str,
+      database: str,
+      project: Optional[str] = None,
+  ):
+    all_templates = self.load_evalution_templates()
+    spanner_client = spanner.Client(project=project)
+    instance = spanner_client.instance(instance)
+    database = instance.database(database)
+
+    self.validate_param_providers(all_templates)
+    return {
+        topic: await self.evaluate_qa(
+            agent,
+            database,
+            template.get("Questions", []),
+            template.get("Answer", None),
+        )
+        for topic, templates in all_templates.items()
+        for template in templates
+    }
+
+
+if __name__ == "__main__":
+  import os
+  import yaml
+  import asyncio
+  from spanner_graph_agent import SpannerGraphAgent
+  from google.cloud.spanner_v1 import param_types
+
+  instance, database, project = (
+      os.environ["GOOGLE_SPANNER_INSTANCE"],
+      os.environ["GOOGLE_SPANNER_DATABASE"],
+      os.environ.get("GOOGLE_CLOUD_PROJECT", None),
+  )
+  agent = SpannerGraphAgent(
+      instance_id=instance,
+      database_id=database,
+      graph_id=os.environ["GOOGLE_SPANNER_GRAPH"],
+      model="gemini-2.5-flash",
+      project_id=project,
+      agent_config={
+          "example_table": "gql_examples",
+          "embedding": "text-embedding-004",
+          "verify_gql": False,
+          "verbose": False,
+          "return_intermediate_steps": False,
+      },
+  )
+  dataset = Dataset("../../../datasets/finance/finance_data.tar.gz")
+  dataset.cleanup(instance, database, project)
+  dataset.load(instance, database, project)
+  dataset.register_parameter_provider(
+      "person_name", lambda: ("Dale Reeves", param_types.STRING)
+  )
+  dataset.register_parameter_provider(
+      "company_name", lambda: ("Bauer-Guerrero", param_types.STRING)
+  )
+  dataset.register_parameter_provider(
+      "mutual_fund_name", lambda: ("Option Spring Fund", param_types.STRING)
+  )
+  dataset.register_parameter_provider(
+      "job_title", lambda: ("Engineer, production", param_types.STRING)
+  )
+  dataset.register_parameter_provider(
+      "person_name_1", lambda: ("Dale Reeves", param_types.STRING)
+  )
+  dataset.register_parameter_provider(
+      "person_name_2", lambda: ("Tina Chambers", param_types.STRING)
+  )
+  results = asyncio.run(dataset.evaluate(agent, instance, database, project))
+  with open("results", "w") as ofile:
+    yaml.dump(results, ofile, default_flow_style=False)

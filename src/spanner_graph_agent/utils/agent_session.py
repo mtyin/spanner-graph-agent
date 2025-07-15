@@ -1,5 +1,6 @@
 from typing import Optional
 from google.adk.agents import BaseAgent
+from google.adk.events import Event
 from google.adk.runners import Runner
 from google.adk.sessions import BaseSessionService, InMemorySessionService
 from google.genai import types
@@ -31,7 +32,7 @@ class AgentSession(object):
   def __exit__(self, exc_type, exc_val, exc_tb):
     pass
 
-  async def ainvoke(self, query: str) -> dict:
+  async def ainvoke(self, query: str) -> Optional[Event]:
     self.session = self.session or await self.session_service.create_session(
         app_name=self.runner.app_name,
         user_id=self.user_id,
@@ -44,4 +45,4 @@ class AgentSession(object):
     ):
       if event.is_final_response():
         return event
-    return {}
+    return None

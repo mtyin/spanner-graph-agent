@@ -41,6 +41,8 @@ class SpannerGraphAgent(LlmAgent):
     self._config_log_level(agent_config)
     information_schema = InformationSchema(database)
     property_graph = information_schema.get_property_graph(graph_id)
+    if property_graph is None:
+      raise ValueError(f'No graph with name `{graph_id}` found')
     tools = self.build_index_tools(
         database, information_schema, property_graph, agent_config
     )
