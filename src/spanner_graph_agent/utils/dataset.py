@@ -305,6 +305,8 @@ if __name__ == "__main__":
   import asyncio
   from spanner_graph_agent import SpannerGraphAgent
   from google.cloud.spanner_v1 import param_types
+  from google.genai import types
+  from google.adk.planners import BuiltInPlanner
 
   instance, database, project = (
       os.environ["GOOGLE_SPANNER_INSTANCE"],
@@ -324,6 +326,9 @@ if __name__ == "__main__":
           "verbose": False,
           "return_intermediate_steps": False,
       },
+      planner=BuiltInPlanner(
+          thinking_config=types.ThinkingConfig(thinking_budget=0)
+      ),
   )
   dataset = Dataset("../../../datasets/finance/finance_data.tar.gz")
   dataset.cleanup(instance, database, project)

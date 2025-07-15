@@ -35,6 +35,7 @@ class SpannerGraphAgent(LlmAgent):
       description: Optional[str] = None,
       instruction: Optional[str] = None,
       agent_config: dict[str, Any] = {},
+      **kwargs: Any,
   ):
     client = spanner.Client(project=project_id)
     database = client.instance(instance_id).database(database_id)
@@ -73,6 +74,7 @@ class SpannerGraphAgent(LlmAgent):
         instruction=instruction or SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
         gql_query_tool=gql_query_tool,
         tools=tools + [gql_query_tool],
+        **kwargs,
     )
 
   def _config_log_level(self, agent_config: dict[str, Any]):
