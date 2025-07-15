@@ -5,7 +5,7 @@ requires-python = ">=3.9"
 dependencies = [
     "google-adk==1.6.1",
     "langchain-google-spanner",
-    "langchain_google_vertexai==2.0.8"
+    "langchain_google_vertexai==2.0.24",
     "pandas",
     "pyyaml",
 ]
