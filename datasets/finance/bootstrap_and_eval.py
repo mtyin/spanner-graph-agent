@@ -4,6 +4,7 @@ import os
 import random
 from dotenv import load_dotenv
 from google.adk.planners import BuiltInPlanner
+from google.cloud import spanner
 from google.cloud.spanner_v1 import param_types
 from google.genai import types
 from spanner_graph_agent import SpannerGraphAgent
@@ -20,31 +21,69 @@ instance, database, project = (
     os.environ.get("GOOGLE_CLOUD_PROJECT", None),
 )
 
+spanner_db = (
+    spanner.Client(project=project).instance(instance).database(database)
+)
+
+
+def query(db, q):
+  with db.snapshot() as snapshot:
+    rows = snapshot.execute_sql(q)
+    return [
+        {
+            column: value
+            for column, value in zip(
+                [column.name for column in rows.fields], row
+            )
+        }
+        for row in rows
+    ]
+
+
 dataset = Dataset("finance_data.tar.gz")
 # Clean up the database if necessary.
 # dataset.cleanup(instance, database, project)
 dataset.load(instance, database, project)
-dataset.register_parameter_provider(
-    "person_name", lambda: ("Michelle Benton", param_types.STRING)
-)
-dataset.register_parameter_provider(
-    "company_name", lambda: ("Cox LLC", param_types.STRING)
-)
-dataset.register_parameter_provider(
-    "mutual_fund_name", lambda: ("Name Born Fund", param_types.STRING)
-)
-dataset.register_parameter_provider(
-    "job_title", lambda: ("Clinical cytogeneticist", param_types.STRING)
-)
-dataset.register_parameter_provider(
-    "person_name_1", lambda: ("Michelle Benton", param_types.STRING)
-)
-dataset.register_parameter_provider(
-    "person_name_2", lambda: ("Marcus Wilson", param_types.STRING)
-)
-dataset.register_parameter_provider(
-    "year", lambda: (random.choice(range(2022, 2025)), param_types.INT64)
-)
+
+sample = query(
+    spanner_db,
+    """
+      GRAPH FinanceGraph
+      MATCH (n:Person) -[w:worksAt]-> (c:Company),
+            (n) -[o:ownsShare]-> (c),
+            (mf:MutualFund) -[:ownsShare]-> (c),
+            (n2:Person) -[:ownsShare]-> (c)
+      WHERE n != n2
+      LIMIT 1
+      RETURN n.name AS person_name,
+             c.name AS company_name,
+             mf.name AS mutual_fund_name,
+             w.job_title,
+             n.name AS person_name_1,
+             n2.name AS person_name_2,
+             EXTRACT(YEAR FROM o.release_date) AS year
+               """,
+)[0]
+for param_name, param_type in [
+    ("person_name", param_types.STRING),
+    ("company_name", param_types.STRING),
+    ("mutual_fund_name", param_types.STRING),
+    ("job_title", param_types.STRING),
+    ("person_name_1", param_types.STRING),
+    ("person_name_2", param_types.STRING),
+    ("year", param_types.INT64),
+]:
+  print(
+      f"Register parameter: {param_name}={repr(sample[param_name])} with"
+      f" type={param_type}"
+  )
+
+  def make_provider(n, t):
+    return lambda: (sample[n], t)
+
+  dataset.register_parameter_provider(
+      param_name, make_provider(n=param_name, t=param_type)
+  )
 
 agent = SpannerGraphAgent(
     instance_id=instance,
@@ -65,7 +104,7 @@ agent = SpannerGraphAgent(
 )
 
 
-async def evaluate(num_examples: int = 10):
+async def evaluate(num_examples: int = 3):
   results = []
   async for topic, result in dataset.evaluate(
       agent, instance, database, project

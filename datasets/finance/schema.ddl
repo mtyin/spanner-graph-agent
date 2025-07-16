@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS Employment(
 CREATE TABLE IF NOT EXISTS Investment(
   id STRING(MAX) NOT NULL,
   investor_id STRING(MAX) NOT NULL,
-  investor_type STRING(MAX) NOT NULL,
   stock_ticker STRING(6),
   release_date DATE,
   num_shares FLOAT32,
@@ -46,7 +45,6 @@ EDGE TABLES (
     DESTINATION KEY(id) REFERENCES Company(id)
     LABEL ownsShare PROPERTIES (id AS company_id,
                                 investor_id,
-                                investor_type,
                                 stock_ticker,
                                 release_date,
                                 num_shares,
@@ -56,7 +54,6 @@ EDGE TABLES (
     DESTINATION KEY(id) REFERENCES Company(id)
     LABEL ownsShare PROPERTIES (id AS company_id,
                                 investor_id,
-                                investor_type,
                                 stock_ticker,
                                 release_date,
                                 num_shares,
@@ -66,7 +63,6 @@ EDGE TABLES (
     DESTINATION KEY(id) REFERENCES Company(id)
     LABEL ownsShare PROPERTIES (id AS company_id,
                                 investor_id,
-                                investor_type,
                                 stock_ticker,
                                 release_date,
                                 num_shares,

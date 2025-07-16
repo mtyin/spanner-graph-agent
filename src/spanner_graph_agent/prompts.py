@@ -10,9 +10,9 @@ SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION = (
 SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE = """
 Answer user query by talking to the knowledge graph stored in Spanner Graph.
 
-The knowledge graph contains rich knowledge about the following node types:
+The knowledge graph contains details about the following node types:
   {node_labels}
-and the following relationships among the nodes:
+and the details of the relationships among the nodes:
   {edge_labels}
 
 This tool can directly access and query the knowledge graph. All user queries,

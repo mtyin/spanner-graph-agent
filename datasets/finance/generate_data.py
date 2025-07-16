@@ -135,7 +135,6 @@ with tempfile.TemporaryDirectory() as temp_dir:
           fieldnames=[
               "id",
               "investor_id",
-              "investor_type",
               "stock_ticker",
               "release_date",
               "num_shares",
