@@ -2,12 +2,16 @@ import asyncio
 import json
 import os
 import random
+from dotenv import load_dotenv
 from google.adk.planners import BuiltInPlanner
 from google.cloud.spanner_v1 import param_types
 from google.genai import types
 from spanner_graph_agent import SpannerGraphAgent
 from spanner_graph_agent.utils.dataset import Dataset
 import yaml
+
+# Load environment variables from .env
+load_dotenv()
 
 graph_id = "FinanceGraph"
 instance, database, project = (
