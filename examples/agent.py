@@ -11,8 +11,7 @@ root_agent = SpannerGraphAgent(
         "example_table": "gql_examples",
         "embedding": "text-embedding-004",
         "verify_gql": False,
-        "log_level": 'DEBUG',
-        "return_intermediate_steps": False,
+        "log_level": "DEBUG",
     },
 )
 
