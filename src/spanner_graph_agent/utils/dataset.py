@@ -5,7 +5,7 @@ import shutil
 import string
 import tarfile
 import tempfile
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from google.adk.agents import BaseAgent
 from google.cloud import spanner
@@ -30,6 +30,8 @@ class Dataset(object):
     edges/
       EdgeA.csv
       EdgeB.csv
+    evaluation/
+      templates.yaml
   """
 
   def __init__(self, path, delimiter: str = ","):
@@ -196,21 +198,15 @@ class Dataset(object):
       with open(os.path.join(self.path, file_path), "r") as f:
         return yaml.safe_load(f)
 
-  async def get_agent_answers(
-      self, agent: BaseAgent, questions: List[str]
+  async def get_agent_answer(
+      self, agent: BaseAgent, question: str
   ) -> List[Any]:
-    agent_answers = []
-    for question in questions:
-      with AgentSession(agent, user_id="evalution") as session:
-        event = await session.ainvoke(question)
-        answer = "n/a"
-        if event and event.content and event.content.parts:
-          answer = "".join((part.text or "" for part in event.content.parts))
-        agent_answers.append({
-            "question": question,
-            "answer": answer,
-        })
-    return agent_answers
+    with AgentSession(agent, user_id="evalution") as session:
+      event = await session.ainvoke(question)
+      answer = "n/a"
+      if event and event.content and event.content.parts:
+        answer = "".join((part.text or "" for part in event.content.parts))
+      return answer
 
   async def get_answer(
       self,
@@ -247,16 +243,19 @@ class Dataset(object):
       database: Database,
       question_templates: List[str],
       answer_query_template: Optional[str],
-  ) -> Dict:
+  ):
     params, param_types = self.instantiate_parameters(question_templates[0])
     questions = [q.format_map(params) for q in question_templates]
-    result = {}
-    if answer_query_template:
-      result["reference_answer"] = await self.get_answer(
-          database, answer_query_template, params, param_types
-      )
-    result["agent_answers"] = await self.get_agent_answers(agent, questions)
-    return result
+    reference_answer = await self.get_answer(
+        database, answer_query_template, params, param_types
+    )
+    for question in questions:
+      result = {
+          "question": question,
+          "agent_answer": await self.get_agent_answer(agent, question),
+          "reference_answer": reference_answer,
+      }
+      yield result
 
   def validate_param_providers(self, all_templates):
     validated_params = set()
@@ -280,77 +279,19 @@ class Dataset(object):
       instance: str,
       database: str,
       project: Optional[str] = None,
-  ):
+  ) -> Iterator[Tuple[str, Dict]]:
     all_templates = self.load_evalution_templates()
     spanner_client = spanner.Client(project=project)
     instance = spanner_client.instance(instance)
     database = instance.database(database)
 
     self.validate_param_providers(all_templates)
-    return {
-        topic: await self.evaluate_qa(
+    for topic, templates in all_templates.items():
+      for template in templates:
+        async for example in self.evaluate_qa(
             agent,
             database,
             template.get("Questions", []),
             template.get("Answer", None),
-        )
-        for topic, templates in all_templates.items()
-        for template in templates
-    }
-
-
-if __name__ == "__main__":
-  import os
-  import yaml
-  import asyncio
-  from spanner_graph_agent import SpannerGraphAgent
-  from google.cloud.spanner_v1 import param_types
-  from google.genai import types
-  from google.adk.planners import BuiltInPlanner
-
-  instance, database, project = (
-      os.environ["GOOGLE_SPANNER_INSTANCE"],
-      os.environ["GOOGLE_SPANNER_DATABASE"],
-      os.environ.get("GOOGLE_CLOUD_PROJECT", None),
-  )
-  agent = SpannerGraphAgent(
-      instance_id=instance,
-      database_id=database,
-      graph_id=os.environ["GOOGLE_SPANNER_GRAPH"],
-      model="gemini-2.5-flash",
-      project_id=project,
-      agent_config={
-          "example_table": "gql_examples",
-          "embedding": "text-embedding-004",
-          "verify_gql": False,
-          "verbose": False,
-          "return_intermediate_steps": False,
-      },
-      planner=BuiltInPlanner(
-          thinking_config=types.ThinkingConfig(thinking_budget=0)
-      ),
-  )
-  dataset = Dataset("../../../datasets/finance/finance_data.tar.gz")
-  dataset.cleanup(instance, database, project)
-  dataset.load(instance, database, project)
-  dataset.register_parameter_provider(
-      "person_name", lambda: ("Dale Reeves", param_types.STRING)
-  )
-  dataset.register_parameter_provider(
-      "company_name", lambda: ("Bauer-Guerrero", param_types.STRING)
-  )
-  dataset.register_parameter_provider(
-      "mutual_fund_name", lambda: ("Option Spring Fund", param_types.STRING)
-  )
-  dataset.register_parameter_provider(
-      "job_title", lambda: ("Engineer, production", param_types.STRING)
-  )
-  dataset.register_parameter_provider(
-      "person_name_1", lambda: ("Dale Reeves", param_types.STRING)
-  )
-  dataset.register_parameter_provider(
-      "person_name_2", lambda: ("Tina Chambers", param_types.STRING)
-  )
-  results = asyncio.run(dataset.evaluate(agent, instance, database, project))
-  with open("results", "w") as ofile:
-    yaml.dump(results, ofile, default_flow_style=False)
+        ):
+          yield topic, example

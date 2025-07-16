@@ -34,6 +34,7 @@ def _build_full_text_search_query(
     partition_columns: List[ColumnWithAlias],
     index_filter_expr: Optional[str],
     canonical_reference_columns: List[ColumnWithAlias],
+    top_k: int,
 ) -> str:
   canonical_reference_aliases = ', '.join((
       col.column.name + ' AS ' + col.alias
@@ -86,7 +87,7 @@ def _build_full_text_search_query(
     FROM {table_name}
     WHERE {filter_expr}
     ORDER BY {score_expr} DESC
-    LIMIT 1
+    LIMIT {top_k}
   """
 
 
@@ -234,7 +235,7 @@ def _get_example_reference(
             name: value[name] for name in canonical_reference_model.model_fields
         }),
     )
-    return example_reference, example_canonical_reference
+    return example_reference, [example_canonical_reference]
   except Exception as e:
     logger.error(f'Failed to build example: `{e}`')
     return None, None
@@ -293,6 +294,9 @@ def _build_full_text_search_function_description(
     This tool convert user-provided references (names, descriptions, titles, etc.)
     into their corresponding canonical identifiers. The output of these tools
     (the canonical ID) must be used in subsequent queries to the knowledge graph.
+
+    Sometimes there are more than one canonical references returned for a user-provided reference
+    if disambiguation is needed.
   """,
   )
 
@@ -381,9 +385,10 @@ def _build_column_with_aliases(
 def _build_full_text_search_function(
     database: Database,
     index: Index,
+    top_k: int,
     table_alias: Optional[str] = None,
     column_aliases: Optional[Dict[str, str]] = None,
-    include_all_index_fields=False,
+    include_all_index_fields: bool = False,
 ) -> Optional[Callable[[BaseModel, ...], BaseModel]]:
 
   table_alias = table_alias or index.table.name
@@ -455,18 +460,21 @@ def _build_full_text_search_function(
     reference_in_user_query: Reference = Field(
         description=f'A reference of {table_alias} from user input query'
     )
-    canonical_reference: CanonicalReference = Field(
+    canonical_references: List[CanonicalReference] = Field(
         description=(
-            f'A canonical reference of {table_alias} in the knowledge graph'
+            f'A list of possible canonical references of {table_alias} in the'
+            ' knowledge graph'
         )
     )
 
+  top_k = max(top_k, 1)
   search_query = _build_full_text_search_query(
       table_name=index.table.name,
       search_criterias=search_criterias,
       partition_columns=partition_columns_with_aliases,
       index_filter_expr=index.filter,
       canonical_reference_columns=canonical_reference_fields,
+      top_k=top_k,
   )
   logger.debug(f'Built search query:\n\n{search_query}\n\n')
 
@@ -494,11 +502,11 @@ def _build_full_text_search_function(
         params = {field_name: ref for field_name, ref in reference}
         values = await _aquery(database, search_query, params=params)
         if values:
-          canonical_ref = CanonicalReference(**values[0])
+          canonical_refs = [CanonicalReference(**value) for value in values]
           results.append(
               ReferenceMapping(
                   reference_in_user_query=reference,
-                  canonical_reference=canonical_ref,
+                  canonical_references=canonical_refs,
               )
           )
     except Exception as e:
@@ -513,7 +521,7 @@ def _build_full_text_search_function(
     logger.debug(f'Resolved reference_mappings: {results}')
     return results
 
-  example_reference, example_canonical_reference = _get_example_reference(
+  example_reference, example_canonical_references = _get_example_reference(
       database, example_query, Reference, CanonicalReference
   )
   fields = '_'.join(Reference.model_fields)
@@ -523,7 +531,7 @@ def _build_full_text_search_function(
           Reference,
           CanonicalReference,
           example_reference,
-          example_canonical_reference,
+          example_canonical_references,
       )
   )
 
@@ -538,9 +546,16 @@ class SpannerFullTextSearchTool(FunctionTool):
       index: Index,
       table_alias: Optional[str] = None,
       column_aliases: Optional[Dict[str, str]] = None,
+      include_all_index_fields: bool = False,
+      top_k: int = 2,
   ) -> Optional[FunctionTool]:
     function = _build_full_text_search_function(
-        database, index, table_alias, column_aliases
+        database,
+        index,
+        top_k=top_k,
+        table_alias=table_alias,
+        column_aliases=column_aliases,
+        include_all_index_fields=include_all_index_fields,
     )
     if function is None:
       return None

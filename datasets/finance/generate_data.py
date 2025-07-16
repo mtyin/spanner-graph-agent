@@ -30,14 +30,14 @@ with tempfile.TemporaryDirectory() as temp_dir:
     for i in range(NUM_PERSONS):
       persons.append({
           "id": f"p{i}",
-          "full_name": fake.name(),
+          "name": fake.name(),
           "birthday": (
               fake.date_of_birth(minimum_age=18, maximum_age=70).isoformat()
           ),
       })
 
     with open(os.path.join(nodes_dir, "Person.csv"), "w", newline="") as f:
-      writer = csv.DictWriter(f, fieldnames=["id", "full_name", "birthday"])
+      writer = csv.DictWriter(f, fieldnames=["id", "name", "birthday"])
       writer.writeheader()
       writer.writerows(persons)
 

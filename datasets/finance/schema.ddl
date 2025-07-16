@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS Person(
   id STRING(MAX) NOT NULL,
-  full_name STRING(MAX),
+  name STRING(MAX),
   birthday DATE,
 ) PRIMARY KEY (id);
 

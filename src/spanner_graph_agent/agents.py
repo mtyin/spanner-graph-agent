@@ -78,12 +78,21 @@ class SpannerGraphAgent(LlmAgent):
     )
 
   def _config_log_level(self, agent_config: dict[str, Any]):
-    log_level = agent_config.get(
-        'log_level', 'DEBUG' if agent_config.get('verbose') else 'INFO'
+    log_level = agent_config.get('log_level')
+    if not log_level:
+      return
+    if not isinstance(log_level, str):
+      raise ValueError('log level must be valid strings: e.g. INFO, DEBUG')
+    level = getattr(logging, log_level.upper())
+    agent_config['verbose'] = level < logging.INFO
+    logging.basicConfig(
+        level=level,
+        format=(
+            '%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d -'
+            ' %(message)s'
+        ),
     )
-    logging.getLogger('spanner_graph_agent').setLevel(
-        getattr(logging, log_level.upper())
-    )
+    logging.getLogger('spanner_graph_agent').setLevel(level)
 
   def build_index_tools(
       self,
