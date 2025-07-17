@@ -3,9 +3,9 @@ name = "spanner-graph-agent"
 dynamic = ["version"]
 requires-python = ">=3.9"
 dependencies = [
-    "google-adk==1.6.1",
+    "google-adk",
     "langchain-google-spanner",
-    "langchain_google_vertexai==2.0.24",
+    "langchain_google_vertexai",
     "pandas",
     "pyyaml",
 ]
