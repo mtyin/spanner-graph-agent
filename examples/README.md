@@ -36,5 +36,5 @@
    ```
    # Make sure the agent engine service account have the right permissions
    # (Spanner, GCS bucket etc): https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/set-up
-   adk deploy agent_engine . --env_file .env --requirements_file requirements.txt --staging_bucket STAGING_BUCKET
+   adk deploy agent_engine . --project GOOGLE_CLOUD_PROJECT --env_file .env --requirements_file requirements.txt --staging_bucket STAGING_BUCKET
    ```
