@@ -1,5 +1,9 @@
 import os
+from dotenv import load_dotenv
 from spanner_graph_agent import SpannerGraphAgent
+
+# Load environment variables from .env
+load_dotenv()
 
 root_agent = SpannerGraphAgent(
     instance_id=os.environ["GOOGLE_SPANNER_INSTANCE"],
@@ -19,10 +23,6 @@ if __name__ == "__main__":
   from spanner_graph_agent.utils.agent_session import AgentSession
   import asyncio
   import uuid
-  from dotenv import load_dotenv
-
-  # Load environment variables from .env
-  load_dotenv()
 
   user_id = str(uuid.uuid4())
   with AgentSession(agent=root_agent, user_id=user_id) as session:
