@@ -31,10 +31,21 @@
    adk web ..
    ```
 
-4) Deploy to agent engine
+4) Deploy to cloud run or agent engine
 
    ```
+   # See: https://google.github.io/adk-docs/deploy/cloud-run/
+   # Make sure the compute engine service account have the right permissions
+   # (Spanner, GCS bucket etc): https://cloud.google.com/compute/docs/access/service-accounts#default_service_account
+   # PROJECT_NUMBER-compute@developer.gserviceaccount.com
+   adk deploy cloud_run --project mtyin-demo --region us-central1 --with_ui .
+
+   ```
+
+   ```
+   # See: https://google.github.io/adk-docs/deploy/agent-engine/
    # Make sure the agent engine service account have the right permissions
    # (Spanner, GCS bucket etc): https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/set-up
+   # service-PROJECT_NUMBER@gcp-sa-aiplatform-re.iam.gserviceaccount.com
    adk deploy agent_engine . --project GOOGLE_CLOUD_PROJECT --env_file .env --requirements_file requirements.txt --staging_bucket STAGING_BUCKET
    ```
