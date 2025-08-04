@@ -7,7 +7,7 @@ from google.adk.planners import BuiltInPlanner
 from google.cloud import spanner
 from google.cloud.spanner_v1 import param_types
 from google.genai import types
-from spanner_graph_agent import SpannerGraphAgent
+from spanner_graph_agent import SpannerGraphQueryAgent
 from spanner_graph_agent.utils.dataset import Dataset
 import yaml
 
@@ -85,7 +85,7 @@ for param_name, param_type in [
       param_name, make_provider(n=param_name, t=param_type)
   )
 
-agent = SpannerGraphAgent(
+agent = SpannerGraphQueryAgent(
     instance_id=instance,
     database_id=database,
     graph_id=graph_id,

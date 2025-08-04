@@ -2,6 +2,7 @@ import logging
 from typing import Any, Optional, Union
 from google.adk.tools import BaseTool, ToolContext
 from google.cloud import spanner
+from google.cloud.spanner_v1.database import Database
 from google.genai import types
 from langchain_community.graphs.graph_store import GraphStore
 from langchain_core.embeddings import Embeddings
@@ -29,12 +30,10 @@ class SpannerGraphQueryQATool(BaseTool):
 
   def __init__(
       self,
-      instance_id: str,
-      database_id: str,
+      database: Database,
       graph_id: str,
       llm: Union[str, BaseLanguageModel],
       description: str,
-      client: Optional[spanner.Client] = None,
       tool_config: dict[str, Any] = {},
   ):
     super().__init__(
@@ -42,15 +41,12 @@ class SpannerGraphQueryQATool(BaseTool):
         description=description,
     )
     config = tool_config.copy()
-    config['instance_id'] = instance_id
-    config['database_id'] = database_id
-    config['graph_id'] = graph_id
-    config['spanner_client'] = client
+    config['database'] = database
     self.graph_store = SpannerGraphStore(
-        instance_id=instance_id,
-        database_id=database_id,
+        instance_id=database._instance.instance_id,
+        database_id=database.database_id,
         graph_name=graph_id,
-        client=client,
+        client=database._instance._client,
     )
     self.llm = self.get_llm(llm, config)
     self.example_store = self.get_example_store(config)
@@ -91,29 +87,30 @@ class SpannerGraphQueryQATool(BaseTool):
     spanner_example_table = tool_config.get('example_table', None)
     if isinstance(spanner_example_table, str):
 
-      instance_id = tool_config['instance_id']
-      database_id = tool_config['database_id']
-      spanner_client = tool_config['spanner_client']
+      database = tool_config['database']
+      database_id = database.database_id
+      instance_id = database._instance.instance_id
+      client = database._instance._client
       SpannerVectorStore.init_vector_store_table(
           instance_id,
           database_id,
           spanner_example_table,
           content_column='user_query',
-          client=spanner_client,
+          client=client,
           metadata_columns=[
               TableColumn(name='example', type='JSON'),
           ],
       )
       return SpannerVectorStore(
-          tool_config['instance_id'],
-          tool_config['database_id'],
+          instance_id,
+          database_id,
           table_name=spanner_example_table,
           content_column='user_query',
           embedding_service=SpannerGraphQueryQATool.get_embedding_service(
               tool_config
           ),
           metadata_json_column='example',
-          client=tool_config['spanner_client'],
+          client=client,
       )
     return None
 

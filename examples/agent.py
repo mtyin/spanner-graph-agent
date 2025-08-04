@@ -1,11 +1,11 @@
 import os
 from dotenv import load_dotenv
-from spanner_graph_agent import SpannerGraphAgent
+from spanner_graph_agent import SpannerGraphQueryAgent
 
 # Load environment variables from .env
 load_dotenv()
 
-root_agent = SpannerGraphAgent(
+root_agent = SpannerGraphQueryAgent(
     instance_id=os.environ["GOOGLE_SPANNER_INSTANCE"],
     database_id=os.environ["GOOGLE_SPANNER_DATABASE"],
     graph_id=os.environ["GOOGLE_SPANNER_GRAPH"],

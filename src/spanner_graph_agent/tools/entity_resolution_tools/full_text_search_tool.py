@@ -1,4 +1,5 @@
 import asyncio
+from spanner_graph_agent.utils.information_schema import Column, Index
 import logging
 import re
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -540,6 +541,7 @@ def _build_full_text_search_function(
 
 class SpannerFullTextSearchTool(FunctionTool):
 
+  # TODO(mtyin): Consider add score-based filtering.
   @staticmethod
   def build_from_index(
       database: Database,

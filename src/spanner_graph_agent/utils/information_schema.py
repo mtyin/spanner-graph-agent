@@ -1,7 +1,8 @@
 import asyncio
+import itertools
 import logging
 import re
-from typing import List, Optional
+from typing import Dict, List, Optional, Set
 from google.cloud.spanner_v1.database import Database
 from pydantic import BaseModel
 
@@ -48,7 +49,7 @@ class PropertyDeclaration(BaseModel):
 
 class Label(BaseModel):
   name: str
-  property_declaration_names: List[str]
+  property_declaration_names: Set[str]
 
 
 class PropertyDefinition(BaseModel):
@@ -72,21 +73,21 @@ class GraphElement(BaseModel):
 
 class PropertyGraph(BaseModel):
   name: str
-  nodes: List[GraphElement]
-  edges: List[GraphElement]
-  labels: List[Label]
-  property_declarations: List[PropertyDeclaration]
+  nodes: Dict[str, GraphElement]
+  edges: Dict[str, GraphElement]
+  labels: Dict[str, Label]
+  property_declarations: Dict[str, PropertyDeclaration]
 
   def get_node_labels(self):
-    return list({label for node in self.nodes for label in node.label_names})
+    return list(
+        {label for node in self.nodes.values() for label in node.label_names}
+    )
 
   def get_edge_labels(self):
-    node_labels = {
-        node.name.casefold(): node.label_names for node in self.nodes
-    }
+    node_labels = {name: node.label_names for name, node in self.nodes.items()}
     return list({
         (src_node_label, edge_label, dst_node_label)
-        for edge in self.edges
+        for edge in self.edges.values()
         for edge_label in edge.label_names
         for src_node_label in node_labels[
             edge.source_node_reference.node_name.casefold()
@@ -95,6 +96,22 @@ class PropertyGraph(BaseModel):
             edge.dest_node_reference.node_name.casefold()
         ]
     })
+
+  def get_label_and_properties(self, table_name: str):
+    return [
+        (
+            lname,
+            {
+                pdef.expr.casefold(): pdef.name
+                for pdef in element.property_definitions
+                if pdef.name.casefold()
+                in self.labels[lname].property_declaration_names
+            },
+        )
+        for element in itertools.chain(self.nodes.values(), self.edges.values())
+        for lname in element.label_names
+        if element.name.casefold() == table_name.casefold()
+    ]
 
 
 class InformationSchema(object):
@@ -118,12 +135,14 @@ class InformationSchema(object):
         ],
     )
 
-  def get_search_indexes(
-      self, enabled_indexes: Optional[List[str]] = None
+  def get_indexes(
+      self,
+      enabled_indexes: Optional[List[str]] = None,
+      enabled_types: Optional[List[str]] = None,
   ) -> List[Index]:
     indexes = []
     for index_config in self._query(
-        self._get_search_index_query(enabled_indexes)
+        self._get_index_query(enabled_indexes, enabled_types)
     ):
       columns = [
           Column(name=name, type=type, expr=expr)
@@ -163,7 +182,7 @@ class InformationSchema(object):
         for label in graph.labels
     }
     results = []
-    for node in graph.nodes:
+    for node in graph.nodes.values():
       for label_name in node.label_names:
         for property_name in label_properties.get(label_name.casefold(), []):
           if property_types.get(property_name.casefold()) != 'JSON':
@@ -210,26 +229,28 @@ class InformationSchema(object):
       return None
     graph_json = results[0]['property_graph_metadata_json']
 
-    property_declarations = [
-        PropertyDeclaration(
+    property_declarations = {
+        decl['name'].casefold(): PropertyDeclaration(
             name=decl['name'],
             type=decl['type'],
         )
         for decl in graph_json.get('propertyDeclarations', [])
-    ]
-    labels = [
-        Label(
+    }
+    labels = {
+        label['name'].casefold(): Label(
             name=label['name'],
-            property_declaration_names=label['propertyDeclarationNames'],
+            property_declaration_names=set(
+                {name.casefold() for name in label['propertyDeclarationNames']}
+            ),
         )
         for label in graph_json.get('labels', [])
-    ]
-    nodes = [
-        GraphElement(
+    }
+    nodes = {
+        node['name'].casefold(): GraphElement(
             name=node['name'],
             table_name=node['baseTableName'],
             key_column_names=node['keyColumns'],
-            label_names=node['labelNames'],
+            label_names=[name.casefold() for name in node['labelNames']],
             property_definitions=[
                 PropertyDefinition(
                     name=pdef['propertyDeclarationName'],
@@ -239,13 +260,13 @@ class InformationSchema(object):
             ],
         )
         for node in graph_json.get('nodeTables', [])
-    ]
-    edges = [
-        GraphElement(
+    }
+    edges = {
+        edge['name'].casefold(): GraphElement(
             name=edge['name'],
             table_name=edge['baseTableName'],
             key_column_names=edge['keyColumns'],
-            label_names=edge['labelNames'],
+            label_names=[name.casefold() for name in edge['labelNames']],
             property_definitions=[
                 PropertyDefinition(
                     name=pdef['propertyDeclarationName'],
@@ -261,7 +282,7 @@ class InformationSchema(object):
             ),
         )
         for edge in graph_json.get('edgeTables', [])
-    ]
+    }
 
     return PropertyGraph(
         name=graph_json['name'],
@@ -297,8 +318,10 @@ class InformationSchema(object):
     WHERE table.TABLE_NAME = '{table_name}'
     """
 
-  def _get_search_index_query(
-      self, enabled_indexes: Optional[List[str]] = None
+  def _get_index_query(
+      self,
+      enabled_indexes: Optional[List[str]] = None,
+      enabled_types: Optional[List[str]] = None,
   ):
     return """
   SELECT INDEX_NAME AS name,
@@ -322,11 +345,15 @@ class InformationSchema(object):
                      "search_partition_by", index.SEARCH_PARTITION_BY,
                      "search_order_by", index.SEARCH_ORDER_BY) AS details
   FROM INFORMATION_SCHEMA.INDEXES AS index
-  WHERE index.INDEX_TYPE = 'SEARCH' AND index.IS_UNIQUE
+  WHERE TRUE
+    AND %s
     AND %s """ % (
-        f'index.name IN UNNEST([{enabled_indexes}])'
+        f'index.index_type IN UNNEST({enabled_types})'
+        if enabled_types is not None
+        else 'TRUE',
+        f'index.index_name IN UNNEST({enabled_indexes})'
         if enabled_indexes is not None
-        else 'TRUE'
+        else 'TRUE',
     )
 
   def _get_node_json_property_schema_query(
