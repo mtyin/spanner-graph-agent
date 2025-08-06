@@ -1,11 +1,11 @@
 import json
 import logging
 from threading import Thread
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from google.adk.tools import FunctionTool, ToolContext
 from google.cloud.spanner_v1.database import Database
 from google.genai import types
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from spanner_graphs.graph_server import GraphServer
 from spanner_graphs.graph_visualization import generate_visualization_html
 from typing_extensions import override
@@ -17,18 +17,26 @@ singleton_server_thread: Thread = None
 
 def _build_visualization_tool(database: Database, graph_id: str):
 
+  class CanonicalNodeReference(BaseModel):
+    referenced_node_type: str = Field(
+        descrption='Node type of the canonical node reference'
+    )
+    canonical_node_reference: Dict[str, Any] = Field(
+        descrption='Canonical reference of the node.'
+    )
+
   async def visualize_subgraph(
-      referenced_node_type: str,
-      canonical_node_reference: Dict[str, Any],
+      canonical_node_references: List[CanonicalNodeReference],
       radius: int = 1,
       tool_context: ToolContext = None,
   ):
-    """This tool visualizes a subgraph of the knowledge graph centered around the given node.
+    """This tool visualizes a subgraph of the knowledge graph centered around the given nodes.
 
-    referenced_node_type: Node type of the canonical node reference.
-    canonical_node_reference: Canonical reference of the node.
+    canonical_node_references: A list of nodes to visualize.
     radius: Radius of the rendered graph, i.e. maximum hops from the center
-            node. By default, radius is 1.
+            nodes. Radius is a non-negative integer. By default, radius is 1.
+            Radius=0: only render the given nodes;
+            Radius=1: also render the immediate neighbors of the given nodes.
 
     The tool returns the visualized results as a saved artifact.
     """
@@ -37,33 +45,37 @@ def _build_visualization_tool(database: Database, graph_id: str):
     if not singleton_server_thread or not singleton_server_thread.is_alive():
       singleton_server_thread = GraphServer.init()
 
-    if isinstance(canonical_node_reference, BaseModel):
-      canonical_node_reference = canonical_node_reference.model_dump_json()
-    predicate = (
-        ' AND '.join([
-            f'n.{pname} = {repr(pvalue)}'
-            for pname, pvalue in canonical_node_reference.items()
-        ])
-        or 'TRUE'
-    )
-    radius = int(max(radius, 1))
-    query = ''
-    if radius == 1:
-      query = f"""
-        GRAPH {graph_id}
-        MATCH p = (n:{referenced_node_type})-()
-        WHERE {predicate}
-        RETURN SAFE_TO_JSON(p) AS p
-      """
-    else:
-      # NOTE(mtyin): This query can potentially be very slow depends on
-      # the exact schema.
-      query = f"""
-        GRAPH {graph_id}
-        MATCH p = (n:{referenced_node_type})-{{1,{radius}}}()
-        WHERE {predicate}
-        RETURN SAFE_TO_JSON(p) AS p
-      """
+    radius = int(max(radius, 0))
+    pieces = []
+    for node_reference in canonical_node_references:
+      if isinstance(node_reference, dict):
+        node_reference = CanonicalNodeReference(**node_reference)
+      predicate = (
+          ' AND '.join([
+              f'n.{pname} = {repr(pvalue)}'
+              for pname, pvalue in node_reference.canonical_node_reference.items()
+          ])
+          or 'TRUE'
+      )
+      if radius == 0:
+        pieces.append(f"""
+          MATCH p = (n:{node_reference.referenced_node_type})
+          WHERE {predicate}
+          RETURN SAFE_TO_JSON(p) AS p""")
+      elif radius == 1:
+        pieces.append(f"""
+          MATCH p = (n:{node_reference.referenced_node_type})-()
+          WHERE {predicate}
+          RETURN SAFE_TO_JSON(p) AS p""")
+      elif radius > 1:
+        # NOTE(mtyin): This query can potentially be very slow depends on
+        # the exact schema.
+        pieces.append(f"""
+          MATCH p = (n:{node_reference.referenced_node_type})-{{1, {radius}}}()
+          WHERE {predicate}
+          RETURN SAFE_TO_JSON(p) AS p""")
+    query = f'GRAPH {graph_id}\n' + '\nUNION ALL\n'.join(pieces)
+    logger.debug('Visualize the query:\n%s' % query)
     html = generate_visualization_html(
         query=query,
         port=GraphServer.port,
