@@ -78,12 +78,75 @@ class PropertyGraph(BaseModel):
   labels: Dict[str, Label]
   property_declarations: Dict[str, PropertyDeclaration]
 
+  def get_node_details(self, label: str):
+    label = label.casefold()
+    return {
+        'Properties': [
+            {
+                'name': pname,
+                'type': self.property_declarations[pname].type,
+            }
+            for pname in self.labels[label].property_declaration_names
+        ]
+    }
+
+  def get_edge_details(self, label: str):
+    label = label.casefold()
+    details = []
+    triplet_labels = self.get_triplet_labels()
+    for src_node_label, edge_label, dst_node_label in triplet_labels:
+      if label == edge_label.casefold():
+        details.append({
+            'Source node type': src_node_label,
+            'Target node type': dst_node_label,
+            'Properties': [
+                {
+                    'name': pname,
+                    'type': self.property_declarations[pname].type,
+                }
+                for pname in self.labels[label].property_declaration_names
+            ],
+        })
+    return details
+
+  def get_triplet_details(
+      self, src_node_label: str, edge_label: str, dst_node_label: str
+  ):
+    src_node_label = src_node_label.casefold()
+    edge_label = edge_label.casefold()
+    dst_node_label = dst_node_label.casefold()
+    details = []
+    triplet_labels = self.get_triplet_labels()
+    for snl, el, dnl in triplet_labels:
+      if (
+          snl.casefold() == src_node_label
+          and el == edge_label
+          and dnl == dest_node_reference
+      ):
+        details.append({
+            'Source node type': src_node_label,
+            'Target node type': dst_node_label,
+            'Properties': [
+                {
+                    'name': pname,
+                    'type': self.property_declarations[pname].type,
+                }
+                for pname in self.labels[label].property_declaration_names
+            ],
+        })
+    return details
+
   def get_node_labels(self):
     return list(
         {label for node in self.nodes.values() for label in node.label_names}
     )
 
   def get_edge_labels(self):
+    return list(
+        {label for edge in self.edges.values() for label in edge.label_names}
+    )
+
+  def get_triplet_labels(self):
     node_labels = {name: node.label_names for name, node in self.nodes.items()}
     return list({
         (src_node_label, edge_label, dst_node_label)
@@ -172,20 +235,19 @@ class InformationSchema(object):
         else None
     )
     property_types = {
-        prop.name.casefold(): prop.type
-        for prop in graph.property_declarations
-        if included_properties is None
-        or prop.name.casefold() in included_properties
+        pname: prop.type
+        for pname, prop in graph.property_declarations.items()
+        if included_properties is None or pname in included_properties
     }
     label_properties = {
-        label.name.casefold(): label.property_declaration_names
-        for label in graph.labels
+        lname: label.property_declaration_names
+        for lname, label in graph.labels.items()
     }
     results = []
     for node in graph.nodes.values():
       for label_name in node.label_names:
-        for property_name in label_properties.get(label_name.casefold(), []):
-          if property_types.get(property_name.casefold()) != 'JSON':
+        for property_name in label_properties.get(label_name, []):
+          if property_types.get(property_name) != 'JSON':
             continue
           results.append(
               JsonSchema(
@@ -202,10 +264,10 @@ class InformationSchema(object):
               )
           )
 
-    for edge in graph.edges:
+    for edge in graph.edges.values():
       for label_name in edge.label_names:
-        for property_name in label_properties.get(label_name.casefold(), []):
-          if property_types.get(property_name.casefold()) != 'JSON':
+        for property_name in label_properties.get(label_name, []):
+          if property_types.get(property_name) != 'JSON':
             continue
           results.append(
               JsonSchema(

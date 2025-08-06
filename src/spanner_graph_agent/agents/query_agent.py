@@ -1,14 +1,16 @@
 import asyncio
 import json
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
 from google.cloud import spanner
 from google.cloud.spanner_v1.database import Database
 from spanner_graph_agent.tools import (
     SpannerFullTextSearchTool,
     SpannerGraphQueryQATool,
     SpannerGraphVisualizationTool,
+    build_schema_inspection_tools,
 )
 from spanner_graph_agent.utils.information_schema import (
     Index,
@@ -26,7 +28,9 @@ logger = logging.getLogger('spanner_graph_agent.' + __name__)
 
 class SpannerGraphQueryAgent(LlmAgent):
 
-  gql_query_tool: SpannerGraphQueryQATool
+  identifier: Tuple[str, str, str, str]
+  agent_config: Dict[str, Any]
+  gql_query_tool: Optional[SpannerGraphQueryQATool] = None
 
   def __init__(
       self,
@@ -37,51 +41,34 @@ class SpannerGraphQueryAgent(LlmAgent):
       project_id: Optional[str] = None,
       description: Optional[str] = None,
       instruction: Optional[str] = None,
-      agent_config: dict[str, Any] = {},
+      agent_config: Dict[str, Any] = {},
       **kwargs: Any,
   ):
-    self._config_log_level(agent_config)
-
-    client = spanner.Client(project=project_id)
-    database = client.instance(instance_id).database(database_id)
-    information_schema = InformationSchema(database)
-    property_graph = information_schema.get_property_graph(graph_id)
-    if property_graph is None:
-      raise ValueError(f'No graph with name `{graph_id}` found')
-
-    tools = self.infer_tools_from_indexes(
-        database, information_schema, property_graph, agent_config
-    )
-    gql_query_tool = self.build_graph_query_tool(
-        database, property_graph, model, agent_config
-    )
-    tools.append(gql_query_tool)
-    tools.append(SpannerGraphVisualizationTool(database, property_graph.name))
-    for tool in tools:
-      logger.debug(
-          f'Tool: {tool.name}\n' + f'Description: {tool.description}\n\n'
-      )
     super().__init__(
         model=model,
         name='SpannerGraphQueryAgent',
         description=description or SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION,
         instruction=instruction or SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
-        gql_query_tool=gql_query_tool,
-        tools=tools + [gql_query_tool],
+        tools=[],
+        identifier=(project_id, instance_id, database_id, graph_id),
+        agent_config=self._config_log_level(agent_config),
         **kwargs,
     )
+    self.reload_tools()
 
   def build_graph_query_tool(
       self,
       database: Database,
       property_graph: PropertyGraph,
       model: str,
-      agent_config: dict[str, Any],
+      agent_config: Dict[str, Any],
   ):
     gql_query_tool_description = (
         SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE.format(
             node_labels=json.dumps(property_graph.get_node_labels(), indent=1),
-            edge_labels=json.dumps(property_graph.get_edge_labels(), indent=1),
+            edge_labels=json.dumps(
+                property_graph.get_triplet_labels(), indent=1
+            ),
         )
     )
     return SpannerGraphQueryQATool(
@@ -92,7 +79,7 @@ class SpannerGraphQueryAgent(LlmAgent):
         agent_config,
     )
 
-  def _config_log_level(self, agent_config: dict[str, Any]):
+  def _config_log_level(self, agent_config: Dict[str, Any]):
     log_level = agent_config.get('log_level')
     if not log_level:
       return
@@ -108,13 +95,14 @@ class SpannerGraphQueryAgent(LlmAgent):
         ),
     )
     logging.getLogger('spanner_graph_agent').setLevel(level)
+    return agent_config
 
   def infer_tools_from_indexes(
       self,
       database: Database,
       information_schema: InformationSchema,
       property_graph: PropertyGraph,
-      agent_config: dict[str, Any],
+      agent_config: Dict[str, Any],
   ):
     enabled_indexes = agent_config.get('enabled_indexes')
     enabled_types = agent_config.get('enabled_index_types', ['SEARCH'])
@@ -149,3 +137,42 @@ class SpannerGraphQueryAgent(LlmAgent):
         )
         tools.append(tool)
     return tools
+
+  def build_schema_tools(
+      self, information_schema: InformationSchema, property_graph: PropertyGraph
+  ):
+    return [
+        FunctionTool(func)
+        for func in build_schema_inspection_tools(
+            information_schema, property_graph
+        )
+    ]
+
+  def reload_tools(self):
+    """Reload the agent tools.
+
+    This is useful when the underlying schema changes.
+    """
+    project_id, instance_id, database_id, graph_id = self.identifier
+    client = spanner.Client(project=project_id)
+    database = client.instance(instance_id).database(database_id)
+    information_schema = InformationSchema(database)
+    property_graph = information_schema.get_property_graph(graph_id)
+    if property_graph is None:
+      raise ValueError(f'No graph with name `{graph_id}` found')
+
+    tools = self.infer_tools_from_indexes(
+        database, information_schema, property_graph, self.agent_config
+    )
+    self.gql_query_tool = self.build_graph_query_tool(
+        database, property_graph, self.model, self.agent_config
+    )
+    tools.append(self.gql_query_tool)
+    tools.append(SpannerGraphVisualizationTool(database, property_graph.name))
+    tools.extend(self.build_schema_tools(information_schema, property_graph))
+    tools.append(FunctionTool(self.reload_tools))
+    for tool in tools:
+      logger.debug(
+          f'Tool: {tool.name}\n' + f'Description: {tool.description}\n\n'
+      )
+    self.tools = tools
