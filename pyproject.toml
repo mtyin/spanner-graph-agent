@@ -8,6 +8,7 @@ dependencies = [
     "langchain_google_vertexai",
     "pandas",
     "pyyaml",
+    "spanner-graph-notebook@git+https://github.com/mtyin/spanner-graph-notebook@allow-empty-hostname",
 ]
 classifiers = [
     "Intended Audience :: Developers",

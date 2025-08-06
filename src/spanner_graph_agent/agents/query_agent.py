@@ -5,7 +5,11 @@ from typing import Any, Optional, Union
 from google.adk.agents import LlmAgent
 from google.cloud import spanner
 from google.cloud.spanner_v1.database import Database
-from spanner_graph_agent.tools import SpannerFullTextSearchTool, SpannerGraphQueryQATool
+from spanner_graph_agent.tools import (
+    SpannerFullTextSearchTool,
+    SpannerGraphQueryQATool,
+    SpannerGraphVisualizationTool,
+)
 from spanner_graph_agent.utils.information_schema import (
     Index,
     InformationSchema,
@@ -52,6 +56,7 @@ class SpannerGraphQueryAgent(LlmAgent):
         database, property_graph, model, agent_config
     )
     tools.append(gql_query_tool)
+    tools.append(SpannerGraphVisualizationTool(database, property_graph.name))
     for tool in tools:
       logger.debug(
           f'Tool: {tool.name}\n' + f'Description: {tool.description}\n\n'
