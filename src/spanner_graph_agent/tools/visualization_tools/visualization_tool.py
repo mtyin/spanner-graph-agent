@@ -20,12 +20,15 @@ def _build_visualization_tool(database: Database, graph_id: str):
   async def visualize_subgraph(
       referenced_node_type: str,
       canonical_node_reference: Dict[str, Any],
-      tool_context: ToolContext,
+      radius: int = 1,
+      tool_context: ToolContext = None,
   ):
     """This tool visualizes a subgraph of the knowledge graph centered around the given node.
 
     referenced_node_type: Node type of the canonical node reference.
     canonical_node_reference: Canonical reference of the node.
+    radius: Radius of the rendered graph, i.e. maximum hops from the center
+            node. By default, radius is 1.
 
     The tool returns the visualized results as a saved artifact.
     """
@@ -43,12 +46,24 @@ def _build_visualization_tool(database: Database, graph_id: str):
         ])
         or 'TRUE'
     )
-    query = f"""
-      GRAPH {graph_id}
-      MATCH p = (n:{referenced_node_type})-()
-      WHERE {predicate}
-      RETURN SAFE_TO_JSON(p) AS p
-    """
+    radius = int(max(radius, 1))
+    query = ''
+    if radius == 1:
+      query = f"""
+        GRAPH {graph_id}
+        MATCH p = (n:{referenced_node_type})-()
+        WHERE {predicate}
+        RETURN SAFE_TO_JSON(p) AS p
+      """
+    else:
+      # NOTE(mtyin): This query can potentially be very slow depends on
+      # the exact schema.
+      query = f"""
+        GRAPH {graph_id}
+        MATCH p = (n:{referenced_node_type})-{{1,{radius}}}()
+        WHERE {predicate}
+        RETURN SAFE_TO_JSON(p) AS p
+      """
     html = generate_visualization_html(
         query=query,
         port=GraphServer.port,
@@ -60,7 +75,7 @@ def _build_visualization_tool(database: Database, graph_id: str):
             'mock': False,
         }),
     )
-    fname = 'visual.html'
+    fname = 'visual-%s.html' % hash(query)
     await tool_context.save_artifact(
         fname,
         types.Part(
