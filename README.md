@@ -24,3 +24,8 @@ the sample data.
 Visualization results are stored as a HTML artifact.
 ![Visualize Spanner Graph](imgs/visualize_graph_1.png)
 ![Visualize Spanner Graph](imgs/visualize_graph_2.png)
+
+## Spanner Graph Agent in notebook
+
+Refer to this [notebook](datasets/Chat_with_Spanner_Graph_Agent.ipynb) on
+some pratical tips to improve the quality.
