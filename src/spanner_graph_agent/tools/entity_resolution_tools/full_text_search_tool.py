@@ -1,5 +1,4 @@
 import asyncio
-from spanner_graph_agent.utils.information_schema import Column, Index
 import logging
 import re
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -549,7 +548,7 @@ class SpannerFullTextSearchTool(FunctionTool):
       table_alias: Optional[str] = None,
       column_aliases: Optional[Dict[str, str]] = None,
       include_all_index_fields: bool = False,
-      top_k: int = 2,
+      top_k: int = 100,
   ) -> Optional[FunctionTool]:
     function = _build_full_text_search_function(
         database,
