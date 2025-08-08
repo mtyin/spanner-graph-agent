@@ -427,7 +427,7 @@ class InformationSchema(object):
     MATCH (n:{label_name})
     WHERE n.{property_name} IS NOT NULL
     LET j = n.{property_name}
-    TABLESAMPLE RESERVOIR (1 ROWS)
+    LIMIT 1 -- Ideally we should do TABLESAMPLE RESERVOIR (1 ROWS), but it can be slow
     LET keys = JSON_KEYS(j, 1)
     FOR key IN keys
     LET v = j[key]
@@ -443,7 +443,7 @@ class InformationSchema(object):
     MATCH -[n:{label_name}]->
     WHERE n.{property_name} IS NOT NULL
     LET j = n.{property_name}
-    TABLESAMPLE RESERVOIR (1 ROWS)
+    LIMIT 1 -- Ideally we should do TABLESAMPLE RESERVOIR (1 ROWS), but it can be slow
     LET keys = JSON_KEYS(j, 1)
     FOR key IN keys
     LET v = j[key]
