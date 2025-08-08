@@ -47,6 +47,7 @@ class SpannerGraphQueryQATool(BaseTool):
         database_id=database.database_id,
         graph_name=graph_id,
         client=database._instance._client,
+        include_json_schema=tool_config.get('include_json_schema', True),
     )
     self.llm = self.get_llm(llm, config)
     self.example_store = self.get_example_store(config)

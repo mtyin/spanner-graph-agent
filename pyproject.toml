@@ -4,7 +4,7 @@ dynamic = ["version"]
 requires-python = ">=3.9"
 dependencies = [
     "google-adk",
-    "langchain-google-spanner",
+    "langchain-google-spanner@git+https://github.com/mtyin/langchain-google-spanner-python@allow-json-inspection",
     "langchain_google_vertexai",
     "pandas",
     "pyyaml",
