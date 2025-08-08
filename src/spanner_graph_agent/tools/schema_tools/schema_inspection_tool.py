@@ -64,13 +64,13 @@ def build_schema_inspection_tools(
     )
 
   @to_json
-  def list_json_property_details(json_property_name: str):
-    """Show details about a json property.
+  def list_json_property_details(node_or_edge_type: str, json_property_name: str):
+    """Show details about a json property of a certain node or edge type.
 
     E.g. possible sub-fields of the json property.
     """
     return info_schema.get_json_property_schema_in_property_graph(
-        property_graph, [json_property_name]
+        property_graph, node_or_edge_type, [json_property_name]
     )
 
   return [

@@ -226,6 +226,7 @@ class InformationSchema(object):
   def get_json_property_schema_in_property_graph(
       self,
       graph: PropertyGraph,
+      label_name: str,
       json_schema_included_properties: Optional[List[str]] = None,
   ) -> List[JsonSchema]:
 
@@ -234,30 +235,30 @@ class InformationSchema(object):
         if json_schema_included_properties
         else None
     )
+    label_name = label_name.casefold()
+    label = graph.labels.get(label_name)
+    if label is None:
+        return []
     property_types = {
-        pname: prop.type
-        for pname, prop in graph.property_declarations.items()
+        pname: graph.property_declarations[pname].type
+        for pname in label.property_declaration_names
         if included_properties is None or pname in included_properties
-    }
-    label_properties = {
-        lname: label.property_declaration_names
-        for lname, label in graph.labels.items()
     }
     results = []
     for node in graph.nodes.values():
-      for label_name in node.label_names:
-        for property_name in label_properties.get(label_name, []):
-          if property_types.get(property_name) != 'JSON':
+      if label_name in node.label_names:
+        for pname, ptype in property_types.items():
+          if ptype != 'JSON':
             continue
           results.append(
               JsonSchema(
                   schema_object_name=label_name,
-                  json_object_name=property_name,
+                  json_object_name=pname,
                   json_fields=[
                       JsonField(**row)
                       for row in self._query(
                           self._get_node_json_property_schema_query(
-                              graph.name, label_name, property_name
+                              graph.name, label_name, pname,
                           )
                       )
                   ],
@@ -265,19 +266,19 @@ class InformationSchema(object):
           )
 
     for edge in graph.edges.values():
-      for label_name in edge.label_names:
-        for property_name in label_properties.get(label_name, []):
-          if property_types.get(property_name) != 'JSON':
+      if label_name in edge.label_names:
+        for pname, ptype in property_types.items():
+          if ptype != 'JSON':
             continue
           results.append(
               JsonSchema(
                   schema_object_name=label_name,
-                  json_object_name=property_name,
+                  json_object_name=pname,
                   json_fields=[
                       JsonField(**row)
                       for row in self._query(
                           self._get_edge_json_property_schema_query(
-                              graph.name, label_name, property_name
+                              graph.name, label_name, pname
                           )
                       )
                   ],
