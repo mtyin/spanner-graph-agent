@@ -14,7 +14,7 @@ from langchain_google_spanner import (
     SpannerVectorStore,
     TableColumn,
 )
-from spanner_graph_agent.prompts import (
+from spanner_graph_agent.utils.prompts import (
     DEFAULT_GQL_EXAMPLE_TEMPLATE,
     DEFAULT_GQL_FIX_TEMPLATE_PART2,
     DEFAULT_GQL_FIX_TEMPLATE_WITH_EXAMPLE_PREFIX,
