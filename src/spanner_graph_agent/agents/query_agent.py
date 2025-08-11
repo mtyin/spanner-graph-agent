@@ -28,7 +28,7 @@ logger = logging.getLogger('spanner_graph_agent.' + __name__)
 
 class SpannerGraphQueryAgent(LlmAgent):
 
-  identifier: Tuple[str, str, str, str]
+  identifier: Tuple[Optional[str], str, str, str]
   agent_config: Dict[str, Any]
   gql_query_tool: Optional[SpannerGraphQueryQATool] = None
 
@@ -82,7 +82,7 @@ class SpannerGraphQueryAgent(LlmAgent):
   def _config_log_level(self, agent_config: Dict[str, Any]):
     log_level = agent_config.get('log_level')
     if not log_level:
-      return
+      return agent_config
     if not isinstance(log_level, str):
       raise ValueError('log level must be valid strings: e.g. INFO, DEBUG')
     level = getattr(logging, log_level.upper())

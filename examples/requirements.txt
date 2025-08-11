@@ -1,2 +1,1 @@
-langchain-google-spanner@git+https://github.com/mtyin/langchain-google-spanner-python@multiplex
 spanner-graph-agent@git+https://github.com/mtyin/spanner-graph-agent.git
