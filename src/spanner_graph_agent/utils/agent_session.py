@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from google.adk.agents import BaseAgent
 from google.adk.artifacts import BaseArtifactService, InMemoryArtifactService
 from google.adk.events import Event
@@ -52,3 +52,18 @@ class AgentSession(object):
       if event.is_final_response():
         return event
     return None
+
+  async def list_artifact_keys(self) -> List[str]:
+    return await self.artifact_service.list_artifact_keys(
+        app_name=self.runner.app_name,
+        user_id=self.user_id,
+        session_id=self.session.id,
+    )
+
+  async def load_artifact(self, filename) -> Optional[types.Part]:
+    return await self.artifact_service.load_artifact(
+        app_name=self.runner.app_name,
+        user_id=self.user_id,
+        session_id=self.session.id,
+        filename=filename,
+    )
