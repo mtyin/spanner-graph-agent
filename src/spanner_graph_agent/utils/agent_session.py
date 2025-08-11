@@ -1,5 +1,6 @@
 from typing import Optional
 from google.adk.agents import BaseAgent
+from google.adk.artifacts import BaseArtifactService, InMemoryArtifactService
 from google.adk.events import Event
 from google.adk.runners import Runner
 from google.adk.sessions import BaseSessionService, InMemorySessionService
@@ -14,13 +15,18 @@ class AgentSession(object):
       user_id: str,
       session_id: Optional[str] = None,
       session_service: Optional[BaseSessionService] = None,
+      artifact_service: Optional[BaseArtifactService] = None,
+      **kwargs,
   ):
     self.agent = agent
     self.session_service = session_service or InMemorySessionService()
+    self.artifact_service = artifact_service or InMemoryArtifactService()
     self.runner = Runner(
         agent=self.agent,
         app_name=self.agent.name,
         session_service=self.session_service,
+        artifact_service=self.artifact_service,
+        **kwargs,
     )
     self.session = None
     self.user_id = user_id
