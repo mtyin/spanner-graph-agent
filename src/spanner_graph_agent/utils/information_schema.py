@@ -5,13 +5,9 @@ import re
 from typing import Dict, List, Optional, Set
 from google.cloud.spanner_v1.database import Database
 from pydantic import BaseModel
+from spanner_graph_agent.utils.database_context import JsonField
 
 logger = logging.getLogger('spanner_graph_agent.' + __name__)
-
-
-class JsonField(BaseModel):
-  key: str
-  type: str
 
 
 class JsonSchema(BaseModel):
