@@ -13,15 +13,14 @@ from spanner_graph_agent.tools import (
     build_schema_inspection_tools,
 )
 from spanner_graph_agent.utils.information_schema import (
-    Index,
     InformationSchema,
-    PropertyGraph,
 )
 from spanner_graph_agent.utils.prompts import (
     SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION,
     SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
     SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE,
 )
+from spanner_graph_agent.utils.database_context import Index, PropertyGraph
 
 logger = logging.getLogger('spanner_graph_agent.' + __name__)
 

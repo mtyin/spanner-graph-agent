@@ -7,7 +7,7 @@ from google.cloud import spanner
 from google.cloud.spanner_v1.database import Database
 from google.genai import types
 from pydantic import BaseModel, Field, create_model
-from spanner_graph_agent.utils.information_schema import Column, Index
+from spanner_graph_agent.utils.database_context import Column, Index
 from typing_extensions import override
 
 logger = logging.getLogger('spanner_graph_agent.' + __name__)
