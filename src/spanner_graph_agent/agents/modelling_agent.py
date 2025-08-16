@@ -1,10 +1,14 @@
 from google.adk.agents import LlmAgent
 
 from spanner_graph_agent.utils.prompts import (
-  GRAPH_MODELLING_AGENT_DEFAULT_DESCRIPTION,
-  GRAPH_MODELLING_AGENT_DEFAULT_INSTRUCTIONS,
+  GRAPH_MODELLING_AGENT_DESCRIPTION,
+  GRAPH_MODELLING_AGENT_INSTRUCTIONS,
+  NEW_GRAPH_MODELLING_AGENT_DESCRIPTION,
+  NEW_GRAPH_MODELLING_AGENT_INSTRUCTIONS,
   GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS,
   SPANNER_GRAPH_SCHEMA_GENERATION_AGENT_INSTRUCTIONS,
+  TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_DESCRIPTION,
+  TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS,
 )
 
 class GraphLogicalSchemaModellingAgent(LlmAgent):
@@ -89,7 +93,20 @@ class SpannerGraphSchemaGenerationAgent(LlmAgent):
         tools=[],
     )
 
-class GraphModellingAgent(LlmAgent):
+class TableToGraphLogicalSchemaModellingAgent(LlmAgent):
+  def __init__(
+      self,
+      model: str,
+  ):
+    super().__init__(
+        model=model,
+        name='TableToGraphLogicalSchemaModellingAgent',
+        description=TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_DESCRIPTION,
+        instruction=TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS,
+        tools=[],
+    )
+
+class NewGraphModellingAgent(LlmAgent):
   """An orchestrator agent that manages the end-to-end graph schema creation workflow.
 
   This agent acts as a high-level controller for a two-phase graph schema
@@ -129,9 +146,24 @@ class GraphModellingAgent(LlmAgent):
   ):
     super().__init__(
         model=model,
-        name='GraphModellingAgent',
-        description=GRAPH_MODELLING_AGENT_DEFAULT_DESCRIPTION,
-        instruction=GRAPH_MODELLING_AGENT_DEFAULT_INSTRUCTIONS,
+        name='NewGraphModellingAgent',
+        description=NEW_GRAPH_MODELLING_AGENT_DESCRIPTION,
+        instruction=NEW_GRAPH_MODELLING_AGENT_INSTRUCTIONS,
         tools=[],
         sub_agents=[GraphLogicalSchemaModellingAgent(model), SpannerGraphSchemaGenerationAgent(model)],
+    )
+
+
+class GraphModellingAgent(LlmAgent):
+  def __init__(
+      self,
+      model: str,
+  ):
+    super().__init__(
+        model=model,
+        name='GraphModellingAgent',
+        description=GRAPH_MODELLING_AGENT_DESCRIPTION,
+        instruction=GRAPH_MODELLING_AGENT_INSTRUCTIONS,
+        tools=[],
+        sub_agents=[NewGraphModellingAgent(model), TableToGraphLogicalSchemaModellingAgent(model)],
     )
