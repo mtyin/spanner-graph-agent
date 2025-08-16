@@ -1,4 +1,5 @@
 from typing import Dict, List, Set, Optional
+import itertools
 from pydantic import BaseModel
 
 class JsonField(BaseModel):
