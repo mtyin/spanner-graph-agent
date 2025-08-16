@@ -127,11 +127,11 @@ DEFAULT_GQL_FIX_TEMPLATE_WITH_EXAMPLE_PREFIX = (
     DEFAULT_GQL_FIX_TEMPLATE_PART0 + DEFAULT_GQL_EXAMPLE_PREFIX
 )
 
-GRAPH_AGENT_DEFAULT_DESCRIPTION = """
+GRAPH_AGENT_DESCRIPTION = """
 An agent specialized in all graph-related operations (e.g. graph querying, graph modeling).
 """
 
-GRAPH_AGENT_DEFAULT_INSTRUCTIONS = """
+GRAPH_AGENT_INSTRUCTIONS = """
 Instructions:
 # Agent Instructions: Graph Agent (Root)
 

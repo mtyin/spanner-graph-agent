@@ -1,4 +1,4 @@
-from google.adk.agents import LlmAgent, SequentialAgent
+from google.adk.agents import LlmAgent
 
 from spanner_graph_agent.utils.prompts import (
   GRAPH_MODELLING_AGENT_DEFAULT_DESCRIPTION,
