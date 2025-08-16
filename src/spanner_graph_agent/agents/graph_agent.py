@@ -12,12 +12,11 @@ class GraphAgent(LlmAgent):
       self,
       model: str,
   ):
-    modelling_agent = GraphModellingAgent(model)
     super().__init__(
         model=model,
         name='GraphAgent',
         description=GRAPH_AGENT_DEFAULT_DESCRIPTION,
         instruction=GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
         tools=[],
-        sub_agents=[modelling_agent],
+        sub_agents=[GraphModellingAgent(model)],
     )
