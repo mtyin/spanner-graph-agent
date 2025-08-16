@@ -127,13 +127,11 @@ class GraphModellingAgent(LlmAgent):
       self,
       model: str,
   ):
-    logical_modelling_agent = GraphLogicalSchemaModellingAgent(model)
-    spanner_graph_schema_agent = SpannerGraphSchemaGenerationAgent(model)   
     super().__init__(
         model=model,
         name='GraphModellingAgent',
         description=GRAPH_MODELLING_AGENT_DEFAULT_DESCRIPTION,
         instruction=GRAPH_MODELLING_AGENT_DEFAULT_INSTRUCTIONS,
         tools=[],
-        sub_agents=[logical_modelling_agent, spanner_graph_schema_agent],
+        sub_agents=[GraphLogicalSchemaModellingAgent(model), SpannerGraphSchemaGenerationAgent(model)],
     )
