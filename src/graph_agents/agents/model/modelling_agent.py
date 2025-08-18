@@ -1,15 +1,16 @@
 from google.adk.agents import LlmAgent
-from spanner_graph_agent.utils.prompts import (
+
+from graph_agents.instructions.model.prompts import (
     GRAPH_MODELLING_AGENT_DESCRIPTION,
     GRAPH_MODELLING_AGENT_INSTRUCTIONS,
 )
-from spanner_graph_agent.utils.prompts_modelling_new_graph import (
+from graph_agents.instructions.model.prompts_modelling_new_graph import (
     GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS,
     NEW_GRAPH_MODELLING_AGENT_DESCRIPTION,
     NEW_GRAPH_MODELLING_AGENT_INSTRUCTIONS,
     SPANNER_GRAPH_SCHEMA_GENERATION_AGENT_INSTRUCTIONS,
 )
-from spanner_graph_agent.utils.prompts_modelling_table_to_graph import (
+from graph_agents.instructions.model.prompts_modelling_table_to_graph import (
     TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_DESCRIPTION,
     TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS,
 )
@@ -102,6 +103,7 @@ class SpannerGraphSchemaGenerationAgent(LlmAgent):
 
 
 class TableToGraphLogicalSchemaModellingAgent(LlmAgent):
+
     def __init__(
         self,
         model: str,
@@ -168,6 +170,7 @@ class NewGraphModellingAgent(LlmAgent):
 
 
 class GraphModellingAgent(LlmAgent):
+
     def __init__(
         self,
         model: str,

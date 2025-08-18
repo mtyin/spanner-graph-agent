@@ -1,13 +1,19 @@
 import asyncio
 import json
 import logging
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 from google.cloud import spanner
 from google.cloud.spanner_v1.database import Database
+from pydantic import BaseModel, Field
 
+from graph_agents.instructions.query.prompts import (
+    SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION,
+    SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
+    SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE,
+)
 from graph_agents.tools import (
     SpannerFullTextSearchTool,
     SpannerGraphQueryQATool,
@@ -16,19 +22,33 @@ from graph_agents.tools import (
 )
 from graph_agents.utils.database_context import Index, PropertyGraph
 from graph_agents.utils.information_schema import InformationSchema
-from graph_agents.utils.prompts import (
-    SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION,
-    SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
-    SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE,
-)
 
 logger = logging.getLogger("graph_agents." + __name__)
+
+
+class QueryAgentConfig(BaseModel):
+    num_gql_examples: Optional[int] = Field(
+        default=3, description="Num of GQL examples to show"
+    )
+    example_table: Optional[str] = Field(
+        default=None, description="Spanner table names that stores the gql examples"
+    )
+    embedding_model: Optional[str] = Field(
+        default=None, description="Embedding model to get gql examples"
+    )
+    enabled_indexes: Optional[List[str]] = Field(
+        default=None, description="Enabled indexes"
+    )
+    enabled_index_types: Optional[List[str]] = Field(
+        default=None, description="Enabled index types"
+    )
+    log_level: str = Field(default="INFO", description="Log level.")
 
 
 class SpannerGraphQueryAgent(LlmAgent):
 
     identifier: Tuple[Optional[str], str, str, str]
-    agent_config: Dict[str, Any]
+    agent_config: QueryAgentConfig
     gql_query_tool: Optional[SpannerGraphQueryQATool] = None
 
     def __init__(
@@ -40,9 +60,11 @@ class SpannerGraphQueryAgent(LlmAgent):
         project_id: Optional[str] = None,
         description: Optional[str] = None,
         instruction: Optional[str] = None,
-        agent_config: Dict[str, Any] = {},
+        agent_config: Union[Dict, QueryAgentConfig] = QueryAgentConfig(),
         **kwargs: Any,
     ):
+        if isinstance(agent_config, dict):
+            agent_config = QueryAgentConfig(**agent_config)
         super().__init__(
             model=model,
             name="SpannerGraphQueryAgent",
@@ -50,7 +72,7 @@ class SpannerGraphQueryAgent(LlmAgent):
             instruction=instruction or SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
             tools=[],
             identifier=(project_id, instance_id, database_id, graph_id),
-            agent_config=self._config_log_level(agent_config),
+            agent_config=agent_config,
             **kwargs,
         )
         self.reload_tools()
@@ -60,7 +82,7 @@ class SpannerGraphQueryAgent(LlmAgent):
         database: Database,
         property_graph: PropertyGraph,
         model: str,
-        agent_config: Dict[str, Any],
+        agent_config: QueryAgentConfig,
     ):
         gql_query_tool_description = (
             SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE.format(
@@ -73,17 +95,16 @@ class SpannerGraphQueryAgent(LlmAgent):
             property_graph.name,
             model,
             gql_query_tool_description,
-            agent_config,
+            agent_config.model_dump(),
         )
 
-    def _config_log_level(self, agent_config: Dict[str, Any]):
-        log_level = agent_config.get("log_level")
+    def _config_log_level(self, agent_config: QueryAgentConfig):
+        log_level = agent_config.log_level
         if not log_level:
-            return agent_config
+            return
         if not isinstance(log_level, str):
             raise ValueError("log level must be valid strings: e.g. INFO, DEBUG")
         level = getattr(logging, log_level.upper())
-        agent_config["verbose"] = level < logging.INFO
         logging.basicConfig(
             level=level,
             format=(
@@ -91,17 +112,16 @@ class SpannerGraphQueryAgent(LlmAgent):
             ),
         )
         logging.getLogger("graph_agents").setLevel(level)
-        return agent_config
 
     def infer_tools_from_indexes(
         self,
         database: Database,
         information_schema: InformationSchema,
         property_graph: PropertyGraph,
-        agent_config: Dict[str, Any],
+        agent_config: QueryAgentConfig,
     ):
-        enabled_indexes = agent_config.get("enabled_indexes")
-        enabled_types = agent_config.get("enabled_index_types", ["SEARCH"])
+        enabled_indexes = agent_config.enabled_indexes
+        enabled_types = agent_config.enabled_index_types
         all_indexes = information_schema.get_indexes(
             enabled_indexes=enabled_indexes,
             enabled_types=enabled_types,

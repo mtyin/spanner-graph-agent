@@ -17,7 +17,7 @@ from langchain_google_spanner import (
 )
 from typing_extensions import override
 
-from graph_agents.utils.prompts import (
+from graph_agents.instructions.query.prompts import (
     DEFAULT_GQL_EXAMPLE_TEMPLATE,
     DEFAULT_GQL_FIX_TEMPLATE_PART2,
     DEFAULT_GQL_FIX_TEMPLATE_WITH_EXAMPLE_PREFIX,
@@ -73,7 +73,7 @@ class SpannerGraphQueryQATool(BaseTool):
     def get_embedding_service(
         tool_config: dict[str, Any] = {},
     ) -> Optional[Embeddings]:
-        embedding = tool_config.get("embedding", None)
+        embedding = tool_config.get("embedding_model", None)
 
         if isinstance(embedding, str):
             from langchain_google_vertexai.embeddings import VertexAIEmbeddings
@@ -166,6 +166,8 @@ class SpannerGraphQueryQATool(BaseTool):
 
         tool_config.setdefault("num_gql_fix_retries", 3)
         tool_config.setdefault("top_k", 100)
+        tool_config.setdefault("verify_gql", False)
+        tool_config["verbose"] = tool_config.get("log_level") != "INFO"
         return SpannerGraphQAChain.from_llm(
             llm,
             graph=graph_store,

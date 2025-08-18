@@ -15,8 +15,7 @@ root_agent = SpannerGraphQueryAgent(
     project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", None),
     agent_config={
         "example_table": "gql_examples",
-        "embedding": "text-embedding-004",
-        "verify_gql": False,
+        "embedding_model": "text-embedding-004",
         "log_level": "DEBUG",
     },
 )
@@ -40,8 +39,8 @@ if __name__ == "__main__":
     asyncio.run(main())
 
 
-# from spanner_graph_agent import GraphAgent
-
+# from graph_agents import GraphAgent
+#
 # root_agent = GraphAgent(
-#     model="gemini-2.0-flash",
+#     model="gemini-2.5-flash",
 # )

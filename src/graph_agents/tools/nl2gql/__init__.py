@@ -1,0 +1,1 @@
+from graph_agents.tools.nl2gql.graph_query_tool import SpannerGraphQueryQATool

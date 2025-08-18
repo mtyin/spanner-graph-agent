@@ -27,6 +27,12 @@ Homepage = "https://github.com/mtyin/spanner-graph-agent"
 Repository = "https://github.com/mtyin/spanner-graph-agent.git"
 
 [project.optional-dependencies]
+dev = [
+		"pre-commit",
+    "black[jupyter]==24.8.0",
+    "isort==5.13.2",
+]
+
 lint = [
     "black[jupyter]==24.8.0",
     "flake8==6.1.0",
