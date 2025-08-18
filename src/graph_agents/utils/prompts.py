@@ -119,10 +119,13 @@ Question:
 GQL Query:
   {gql}
 """
-DEFAULT_GQL_GENERATION_WITH_EXAMPLE_PREFIX = """
+DEFAULT_GQL_GENERATION_WITH_EXAMPLE_PREFIX = (
+    """
 You are a Spanner Graph Graph Query Language (GQL) expert.
 Create an Spanner Graph GQL query for the question using the schema.
-""" + DEFAULT_GQL_EXAMPLE_PREFIX
+"""
+    + DEFAULT_GQL_EXAMPLE_PREFIX
+)
 DEFAULT_GQL_FIX_TEMPLATE_WITH_EXAMPLE_PREFIX = (
     DEFAULT_GQL_FIX_TEMPLATE_PART0 + DEFAULT_GQL_EXAMPLE_PREFIX
 )

@@ -1,5 +1,5 @@
 [project]
-name = "spanner-graph-agent"
+name = "graph-agents"
 dynamic = ["version"]
 requires-python = ">=3.9"
 dependencies = [
@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 [tool.setuptools.dynamic]
-version = {attr = "spanner_graph_agent.version.__version__"}
+version = {attr = "graph_agents.version.__version__"}
 
 [project.urls]
 Homepage = "https://github.com/mtyin/spanner-graph-agent"
@@ -55,7 +55,7 @@ target-version = ['py39']
 profile = "black"
 
 [tool.mypy]
-python_version = 3.9
+python_version = 3.12
 warn_unused_configs = true
 
 exclude = [

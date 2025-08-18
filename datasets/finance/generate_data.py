@@ -3,9 +3,11 @@
 import csv
 import os
 import random
-from faker import Faker
-import tempfile
 import shutil
+import tempfile
+from typing import Any, Dict, Optional
+
+from faker import Faker
 
 fake = Faker()
 
@@ -28,72 +30,76 @@ with tempfile.TemporaryDirectory() as temp_dir:
     # Generate Person data
     persons = []
     for i in range(NUM_PERSONS):
-      persons.append({
-          "id": f"p{i}",
-          "name": fake.name(),
-          "birthday": (
-              fake.date_of_birth(minimum_age=18, maximum_age=70).isoformat()
-          ),
-      })
+        persons.append(
+            {
+                "id": f"p{i}",
+                "name": fake.name(),
+                "birthday": (
+                    fake.date_of_birth(minimum_age=18, maximum_age=70).isoformat()
+                ),
+            }
+        )
 
     with open(os.path.join(nodes_dir, "Person.csv"), "w", newline="") as f:
-      writer = csv.DictWriter(f, fieldnames=["id", "name", "birthday"])
-      writer.writeheader()
-      writer.writerows(persons)
+        writer = csv.DictWriter(f, fieldnames=["id", "name", "birthday"])
+        writer.writeheader()
+        writer.writerows(persons)
 
     print(f"Generated {len(persons)} persons.")
 
     # Generate Company data
     companies = []
     for i in range(NUM_COMPANIES):
-      companies.append({
-          "id": f"c{i}",
-          "name": fake.company(),
-          "address": fake.address(),
-          "date_founded": (
-              fake.date_of_birth(minimum_age=1, maximum_age=100).isoformat()
-          ),
-      })
+        companies.append(
+            {
+                "id": f"c{i}",
+                "name": fake.company(),
+                "address": fake.address(),
+                "date_founded": (
+                    fake.date_of_birth(minimum_age=1, maximum_age=100).isoformat()
+                ),
+            }
+        )
 
     with open(os.path.join(nodes_dir, "Company.csv"), "w", newline="") as f:
-      writer = csv.DictWriter(
-          f, fieldnames=["id", "name", "address", "date_founded"]
-      )
-      writer.writeheader()
-      writer.writerows(companies)
+        writer = csv.DictWriter(f, fieldnames=["id", "name", "address", "date_founded"])
+        writer.writeheader()
+        writer.writerows(companies)
 
     print(f"Generated {len(companies)} companies.")
 
     # Generate MutualFund data
     mutual_funds = []
     for i in range(NUM_MUTUAL_FUNDS):
-      mutual_funds.append({
-          "id": f"m{i}",
-          "name": f"{fake.word().capitalize()} {fake.word().capitalize()} Fund",
-      })
+        mutual_funds.append(
+            {
+                "id": f"m{i}",
+                "name": f"{fake.word().capitalize()} {fake.word().capitalize()} Fund",
+            }
+        )
 
     with open(os.path.join(nodes_dir, "MutualFund.csv"), "w", newline="") as f:
-      writer = csv.DictWriter(f, fieldnames=["id", "name"])
-      writer.writeheader()
-      writer.writerows(mutual_funds)
+        writer = csv.DictWriter(f, fieldnames=["id", "name"])
+        writer.writeheader()
+        writer.writerows(mutual_funds)
 
     print(f"Generated {len(mutual_funds)} mutual funds.")
 
     # Generate Employment data
     employments = []
     for i in range(NUM_EMPLOYMENTS):
-      employments.append({
-          "id": f"c{random.randint(0, NUM_COMPANIES - 1)}",
-          "employee_id": f"p{random.randint(0, NUM_PERSONS - 1)}",
-          "job_title": fake.job(),
-      })
+        employments.append(
+            {
+                "id": f"c{random.randint(0, NUM_COMPANIES - 1)}",
+                "employee_id": f"p{random.randint(0, NUM_PERSONS - 1)}",
+                "job_title": fake.job(),
+            }
+        )
 
     with open(os.path.join(edges_dir, "Employment.csv"), "w", newline="") as f:
-      writer = csv.DictWriter(
-          f, fieldnames=["id", "employee_id", "job_title"]
-      )
-      writer.writeheader()
-      writer.writerows(employments)
+        writer = csv.DictWriter(f, fieldnames=["id", "employee_id", "job_title"])
+        writer.writeheader()
+        writer.writerows(employments)
 
     print(f"Generated {len(employments)} employments.")
 
@@ -101,61 +107,64 @@ with tempfile.TemporaryDirectory() as temp_dir:
     investments = []
     investment_types = ["Person", "Company", "MutualFund"]
     for i in range(NUM_INVESTMENTS):
-      investment_type = random.choice(investment_types)
-      investment = {}
-      if investment_type == "Person":
-        investment["investor_id"] = f"p{random.randint(0, NUM_PERSONS - 1)}"
-        investment["num_shares"] = round(random.uniform(10, 10000), 2)
-        investment["percentage_holding"] = round(random.uniform(0.01, 5.0), 4)
-      elif investment_type == "Company":
-        investor_company = f"c{random.randint(0, NUM_COMPANIES - 1)}"
-        invested_company = f"c{random.randint(0, NUM_COMPANIES - 1)}"
-        while investor_company == invested_company:
-          invested_company = f"c{random.randint(0, NUM_COMPANIES - 1)}"
-        investment["investor_id"] = investor_company
-        investment["num_shares"] = round(random.uniform(1000, 100000), 2)
-        investment["percentage_holding"] = round(random.uniform(0.1, 10.0), 4)
-      elif investment_type == "MutualFund":
-        investment["investor_id"] = f"m{random.randint(0, NUM_MUTUAL_FUNDS - 1)}"
-        investment["num_shares"] = round(random.uniform(100, 50000), 2)
-        investment["percentage_holding"] = round(random.uniform(0.05, 7.0), 4)
+        investment_type = random.choice(investment_types)
+        investment: Dict[str, Any] = {}
+        if investment_type == "Person":
+            investment["investor_id"] = f"p{random.randint(0, NUM_PERSONS - 1)}"
+            investment["num_shares"] = round(random.uniform(10, 10000), 2)
+            investment["percentage_holding"] = round(random.uniform(0.01, 5.0), 4)
+        elif investment_type == "Company":
+            investor_company = f"c{random.randint(0, NUM_COMPANIES - 1)}"
+            invested_company = f"c{random.randint(0, NUM_COMPANIES - 1)}"
+            while investor_company == invested_company:
+                invested_company = f"c{random.randint(0, NUM_COMPANIES - 1)}"
+            investment["investor_id"] = investor_company
+            investment["num_shares"] = round(random.uniform(1000, 100000), 2)
+            investment["percentage_holding"] = round(random.uniform(0.1, 10.0), 4)
+        elif investment_type == "MutualFund":
+            investment["investor_id"] = f"m{random.randint(0, NUM_MUTUAL_FUNDS - 1)}"
+            investment["num_shares"] = round(random.uniform(100, 50000), 2)
+            investment["percentage_holding"] = round(random.uniform(0.05, 7.0), 4)
 
-      investment["id"] = f"c{random.randint(0, NUM_COMPANIES - 1)}"
+        investment["id"] = f"c{random.randint(0, NUM_COMPANIES - 1)}"
 
-      investment["stock_ticker"] = "".join(
-          random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=random.randint(3, 5))
-      )
-      investment["release_date"] = fake.date_this_decade().isoformat()
-      investments.append(investment)
-
+        investment["stock_ticker"] = "".join(
+            random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=random.randint(3, 5))
+        )
+        investment["release_date"] = fake.date_this_decade().isoformat()
+        investments.append(investment)
 
     with open(os.path.join(edges_dir, "Investment.csv"), "w", newline="") as f:
-      writer = csv.DictWriter(
-          f,
-          fieldnames=[
-              "id",
-              "investor_id",
-              "stock_ticker",
-              "release_date",
-              "num_shares",
-              "percentage_holding",
-          ],
-      )
-      writer.writeheader()
-      writer.writerows(investments)
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "id",
+                "investor_id",
+                "stock_ticker",
+                "release_date",
+                "num_shares",
+                "percentage_holding",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(investments)
 
     print(f"Generated {len(investments)} investments.")
 
     # Copy schema.ddl to the data directory
-    shutil.copy(os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.ddl"), data_dir)
+    shutil.copy(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.ddl"), data_dir
+    )
 
     # Copy evaluation directory if it exists
-    evaluation_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "evaluation")
+    evaluation_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "evaluation"
+    )
     if os.path.exists(evaluation_dir):
-      shutil.copytree(evaluation_dir, os.path.join(data_dir, "evaluation"))
+        shutil.copytree(evaluation_dir, os.path.join(data_dir, "evaluation"))
 
     # Create a gzipped tarball of the data
-    shutil.make_archive("finance_data", 'gztar', data_dir, ".")
+    shutil.make_archive("finance_data", "gztar", data_dir, ".")
 
 
 print("Data generation complete and saved to finance_data.tar.gz")

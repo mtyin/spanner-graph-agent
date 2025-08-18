@@ -2,14 +2,17 @@ import asyncio
 import json
 import os
 import random
+from typing import Dict, List
+
+import yaml
 from dotenv import load_dotenv
 from google.adk.planners import BuiltInPlanner
 from google.cloud import spanner
 from google.cloud.spanner_v1 import param_types
 from google.genai import types
-from spanner_graph_agent import SpannerGraphQueryAgent
-from spanner_graph_agent.utils.dataset import Dataset
-import yaml
+
+from graph_agents import SpannerGraphQueryAgent
+from graph_agents.utils.dataset import Dataset
 
 # Load environment variables from .env
 load_dotenv()
@@ -21,23 +24,19 @@ instance, database, project = (
     os.environ.get("GOOGLE_CLOUD_PROJECT", None),
 )
 
-spanner_db = (
-    spanner.Client(project=project).instance(instance).database(database)
-)
+spanner_db = spanner.Client(project=project).instance(instance).database(database)
 
 
 def query(db, q):
-  with db.snapshot() as snapshot:
-    rows = snapshot.execute_sql(q)
-    return [
-        {
-            column: value
-            for column, value in zip(
-                [column.name for column in rows.fields], row
-            )
-        }
-        for row in rows
-    ]
+    with db.snapshot() as snapshot:
+        rows = snapshot.execute_sql(q)
+        return [
+            {
+                column: value
+                for column, value in zip([column.name for column in rows.fields], row)
+            }
+            for row in rows
+        ]
 
 
 dataset = Dataset("finance_data.tar.gz")
@@ -73,17 +72,17 @@ for param_name, param_type in [
     ("person_name_2", param_types.STRING),
     ("year", param_types.INT64),
 ]:
-  print(
-      f"Register parameter: {param_name}={repr(sample[param_name])} with"
-      f" type={param_type}"
-  )
+    print(
+        f"Register parameter: {param_name}={repr(sample[param_name])} with"
+        f" type={param_type}"
+    )
 
-  def make_provider(n, t):
-    return lambda: (sample[n], t)
+    def make_provider(n, t):
+        return lambda: (sample[n], t)
 
-  dataset.register_parameter_provider(
-      param_name, make_provider(n=param_name, t=param_type)
-  )
+    dataset.register_parameter_provider(
+        param_name, make_provider(n=param_name, t=param_type)
+    )
 
 agent = SpannerGraphQueryAgent(
     instance_id=instance,
@@ -98,25 +97,21 @@ agent = SpannerGraphQueryAgent(
         "log_level": None,
         "return_intermediate_steps": False,
     },
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_budget=0)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(thinking_budget=0)),
 )
 
 
 async def evaluate(num_examples: int = 3):
-  results = []
-  async for topic, result in dataset.evaluate(
-      agent, instance, database, project
-  ):
-    if len(results) > num_examples:
-      break
-    print(f"========= {topic} ===========")
-    print(json.dumps(result, indent=1))
-    results.append({"topic": topic, "result": result})
+    results: List[Dict] = []
+    async for topic, result in dataset.evaluate(agent, instance, database, project):
+        if len(results) > num_examples:
+            break
+        print(f"========= {topic} ===========")
+        print(json.dumps(result, indent=1))
+        results.append({"topic": topic, "result": result})
 
-  with open("results", "w") as ofile:
-    yaml.dump(results, ofile, default_flow_style=False)
+    with open("results", "w") as ofile:
+        yaml.dump(results, ofile, default_flow_style=False)
 
 
 asyncio.run(evaluate())
