@@ -140,8 +140,8 @@ class SpannerGraphQueryAgent(LlmAgent):
                     tool = SpannerFullTextSearchTool.build_from_index(
                         database,
                         index,
-                        label_name,
-                        column_aliases,
+                        table_alias=label_name,
+                        column_aliases=column_aliases,
                     )
                 if not tool:
                     logger.info(f"Skipped index for label `{label_name}`: {index.name}")

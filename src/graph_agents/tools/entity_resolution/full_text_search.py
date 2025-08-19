@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import re
 from typing import Any, Callable, Dict, List, Optional, Type, Union
@@ -20,6 +19,10 @@ class ColumnWithAlias(BaseModel):
     column: Column
     alias: str
 
+    def build(self):
+        # E.g. name AS fullName
+        return "%s AS %s" % (self.column.name, self.alias)
+
 
 # search_function(tokenlist_column, @{tokenized_column.alias})
 # score_function(tokenlist_column, @{tokenized_column.alias})
@@ -28,6 +31,26 @@ class SearchCriteria(BaseModel):
     tokenized_column: ColumnWithAlias
     search_function: str
     score_function: str
+
+    def build_search_expr(self):
+        search_func, tokenlist_name, tokenized_alias = (
+            self.search_function,
+            self.tokenlist_column.name,
+            self.tokenized_column.alias,
+        )
+        # E.g. SEARCH(name_token, @name)
+        return f"{search_func}({tokenlist_name}, @{tokenized_alias})"
+
+    def build_score_expr(self):
+        score_func, tokenlist_name, tokenized_alias, tokenized_name = (
+            self.score_function,
+            self.tokenlist_column.name,
+            self.tokenized_column.alias,
+            self.tokenized_column.column.name,
+        )
+        # E.g. SCORE(name_token, @name) + IF(name = @name, 1, 0)
+        # IF() expression is added to prioritize exact match.
+        return f"{score_func}({tokenlist_name}, @{tokenized_alias}) + IF({tokenized_name} = @{tokenized_alias}, 1., 0.)"
 
 
 def _build_full_text_search_query(
@@ -39,53 +62,18 @@ def _build_full_text_search_query(
     top_k: int,
 ) -> str:
     canonical_reference_aliases = ", ".join(
-        (col.column.name + " AS " + col.alias for col in canonical_reference_columns)
+        (col.build() for col in canonical_reference_columns)
     )
-    filter_conditions = [
-        "".join(
-            (
-                criteria.search_function,
-                "(",
-                criteria.tokenlist_column.name,
-                ", ",
-                "@",
-                criteria.tokenized_column.alias,
-                ")",
-            )
-        )
-        for criteria in search_criterias
-    ]
+    filter_conditions = [criteria.build_search_expr() for criteria in search_criterias]
     filter_conditions.extend(
-        ["".join((col.column.name, " = ", "@", col.alias)) for col in partition_columns]
+        # E.g. name = @name
+        [f"{col.column.name} = @{col.alias}" for col in partition_columns]
     )
     if index_filter_expr:
         filter_conditions.append(index_filter_expr)
 
     score_expr = ", ".join(
-        [
-            # score_function(tokenlist_column, @tokenized_column.alias)
-            # +
-            # if(tokenized_column = @tokenized_column.alias, 1, 0)
-            "".join(
-                (
-                    criteria.score_function,
-                    "(",
-                    criteria.tokenlist_column.name,
-                    ", ",
-                    "@",
-                    criteria.tokenized_column.alias,
-                    ")",
-                    " + ",
-                    "IF(",
-                    criteria.tokenized_column.column.name,
-                    "=",
-                    "@",
-                    criteria.tokenized_column.alias,
-                    ", 1., 0.)",
-                )
-            )
-            for criteria in search_criterias
-        ]
+        [criteria.build_score_expr() for criteria in search_criterias]
     )
     filter_expr = " AND ".join(filter_conditions)
     return f"""
@@ -106,7 +94,7 @@ def _build_example_query(
 ) -> str:
     example_aliases = ", ".join(
         [
-            col.column.name + " AS " + col.alias
+            col.build()
             for col in (
                 canonical_reference_columns
                 + partition_columns
@@ -115,7 +103,7 @@ def _build_example_query(
         ]
     )
     filter_conditions = [
-        "".join((criteria.tokenized_column.column.name, " IS NOT NULL"))
+        f"{criteria.tokenized_column.column.name} IS NOT NULL"
         for criteria in search_criterias
     ]
     if index_filter_expr:
@@ -209,15 +197,6 @@ def _query(database, query, params=None):
     except Exception as e:
         logger.error(f"Query failed: `{e}`")
     return []
-
-
-async def _aquery(database, query, params=None) -> List[Dict[str, Any]]:
-    return await asyncio.to_thread(
-        _query,
-        database,
-        query,
-        params=params,
-    )
 
 
 def _get_example_reference(database, query, reference_model, canonical_reference_model):
@@ -389,9 +368,10 @@ def _build_full_text_search_function(
     database: Database,
     index: Index,
     top_k: int,
+    include_all_index_fields: bool = False,
+    include_examples: bool = False,
     table_alias: Optional[str] = None,
     column_aliases: Optional[Dict[str, str]] = None,
-    include_all_index_fields: bool = False,
 ) -> Optional[Callable[..., BaseModel]]:
 
     table_alias = table_alias or index.table.name
@@ -481,16 +461,7 @@ def _build_full_text_search_function(
     )
     logger.debug(f"Built search query:\n\n{search_query}\n\n")
 
-    example_query = _build_example_query(
-        table_name=index.table.name,
-        search_criterias=search_criterias,
-        partition_columns=partition_columns_with_aliases,
-        index_filter_expr=index.filter,
-        canonical_reference_columns=canonical_reference_fields,
-    )
-    logger.debug(f"Built example query:\n\n{example_query}\n\n")
-
-    async def resolve_canonical_reference(
+    def resolve_canonical_reference(
         references: List[BaseModel],
         tool_context: ToolContext,
     ) -> List[ReferenceMapping]:
@@ -503,7 +474,7 @@ def _build_full_text_search_function(
             results = []
             for reference in references:
                 params = {field_name: ref for field_name, ref in reference}
-                values = await _aquery(database, search_query, params=params)
+                values = _query(database, search_query, params=params)
                 if values:
                     canonical_refs = [CanonicalReference(**value) for value in values]
                     results.append(
@@ -524,9 +495,19 @@ def _build_full_text_search_function(
         logger.debug(f"Resolved reference_mappings: {results}")
         return results
 
-    example_reference, example_canonical_references = _get_example_reference(
-        database, example_query, Reference, CanonicalReference
-    )
+    example_reference, example_canonical_references = None, None
+    if include_examples:
+        example_query = _build_example_query(
+            table_name=index.table.name,
+            search_criterias=search_criterias,
+            partition_columns=partition_columns_with_aliases,
+            index_filter_expr=index.filter,
+            canonical_reference_columns=canonical_reference_fields,
+        )
+        logger.debug(f"Built example query:\n\n{example_query}\n\n")
+        example_reference, example_canonical_references = _get_example_reference(
+            database, example_query, Reference, CanonicalReference
+        )
     fields = "_".join(Reference.model_fields)
     resolve_canonical_reference.__name__, resolve_canonical_reference.__doc__ = (
         _build_full_text_search_function_description(
@@ -548,18 +529,22 @@ class SpannerFullTextSearchTool(FunctionTool):
     def build_from_index(
         database: Database,
         index: Index,
-        table_alias: Optional[str] = None,
-        column_aliases: Optional[Dict[str, str]] = None,
         include_all_index_fields: bool = False,
+        include_examples: bool = True,
         top_k: int = 100,
+        # Alias table name to `table_alias`.
+        table_alias: Optional[str] = None,
+        # Alias column name to `column_aliases[column_name]`.
+        column_aliases: Optional[Dict[str, str]] = None,
     ) -> Optional[FunctionTool]:
         function = _build_full_text_search_function(
             database,
             index,
             top_k=top_k,
+            include_all_index_fields=include_all_index_fields,
+            include_examples=include_examples,
             table_alias=table_alias,
             column_aliases=column_aliases,
-            include_all_index_fields=include_all_index_fields,
         )
         if function is None:
             return None

@@ -61,7 +61,7 @@ class GraphElement(BaseModel):
     table_name: str
     key_column_names: List[str]
     label_names: List[str]
-    property_definitions: List[PropertyDefinition]
+    property_definitions: Dict[str, PropertyDefinition]
     source_node_reference: Optional[NodeReference] = None
     dest_node_reference: Optional[NodeReference] = None
 
@@ -123,6 +123,7 @@ class PropertyGraph(BaseModel):
                 details.append(
                     {
                         "Source node type": src_node_label,
+                        "Edge type": edge_label,
                         "Target node type": dst_node_label,
                         "Properties": [
                             {
@@ -167,7 +168,7 @@ class PropertyGraph(BaseModel):
                 lname,
                 {
                     pdef.expr.casefold(): pdef.name
-                    for pdef in element.property_definitions
+                    for pdef in element.property_definitions.values()
                     if pdef.name.casefold()
                     in self.labels[lname].property_declaration_names
                 },
