@@ -4,10 +4,7 @@ from google.adk.agents import LlmAgent
 
 from graph_agents.agents.model import GraphModellingAgent
 from graph_agents.agents.query import QueryAgentConfig, SpannerGraphQueryAgent
-from graph_agents.instructions.prompts import (
-    GRAPH_AGENT_DESCRIPTION,
-    GRAPH_AGENT_INSTRUCTIONS,
-)
+from graph_agents.instructions.prompts import get_prompt
 
 
 class GraphAgent(LlmAgent):
@@ -46,8 +43,8 @@ class GraphAgent(LlmAgent):
         super().__init__(
             model=model,
             name="GraphAgent",
-            description=GRAPH_AGENT_DESCRIPTION,
-            instruction=GRAPH_AGENT_INSTRUCTIONS,
+            description=get_prompt("GRAPH_AGENT_DESCRIPTION"),
+            instruction=get_prompt("GRAPH_AGENT_INSTRUCTIONS"),
             tools=[self._build_spanner_graph_query_agent],
             sub_agents=[GraphModellingAgent(model)],
         )

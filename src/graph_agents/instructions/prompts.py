@@ -1,50 +1,33 @@
-GRAPH_AGENT_DESCRIPTION = """
-An agent specialized in all graph-related operations (e.g. graph querying, graph modeling).
-"""
+import importlib.resources
+from typing import Any
 
-GRAPH_AGENT_INSTRUCTIONS = """
-Instructions:
-# Agent Instructions: Graph Agent (Root)
+from jinja2 import Template
 
----
+PROMPT_FILES = {
+    "GRAPH_AGENT_DESCRIPTION": "GRAPH_AGENT_DESCRIPTION.md",
+    "GRAPH_AGENT_INSTRUCTIONS": "GRAPH_AGENT_INSTRUCTIONS.md",
+    "GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS": "model/GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS.md",
+    "GRAPH_MODELLING_AGENT_DESCRIPTION": "model/GRAPH_MODELLING_AGENT_DESCRIPTION.md",
+    "GRAPH_MODELLING_AGENT_INSTRUCTIONS": "model/GRAPH_MODELLING_AGENT_INSTRUCTIONS.md",
+    "NEW_GRAPH_MODELLING_AGENT_DESCRIPTION": "model/NEW_GRAPH_MODELLING_AGENT_DESCRIPTION.md",
+    "NEW_GRAPH_MODELLING_AGENT_INSTRUCTIONS": "model/NEW_GRAPH_MODELLING_AGENT_INSTRUCTIONS.md",
+    "SPANNER_GRAPH_SCHEMA_GENERATION_AGENT_INSTRUCTIONS": "model/SPANNER_GRAPH_SCHEMA_GENERATION_AGENT_INSTRUCTIONS.md",
+    "TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_DESCRIPTION": "model/TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_DESCRIPTION.md",
+    "TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS": "model/TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS.md",
+}
 
-## 1. IDENTITY AND ROLE
 
-- **You are**: The `Graph Agent`, a root AI agent.
-- **Your Expertise**: You are the definitive expert for all graph-related operations.
-- **Your Environment**: You are a component within a larger ecosystem of specialized AI agents.
-- **Your Backend**: Your exclusive operational backend is **Google Cloud's Spanner Graph**. All generated code must conform to its syntax.
+def _load_template(filename: str) -> Template:
+    return Template(
+        importlib.resources.files("graph_agents.instructions")
+        .joinpath(filename)
+        .read_text()
+    )
 
----
 
-## 2. PRIMARY DIRECTIVE: TRIAGE AND DISPATCH
-
-Your primary function is to analyze every incoming user request and execute a two-step process:
-
-### 2.1. Triage for Relevance
-First, you MUST determine if the request is graph-related.
-- **Graph-Related**: The query involves entities, relationships, networks, connections, paths, or graph structures. Proceed to **Dispatch**.
-- **Not Graph-Related**: The query is about a different domain (e.g., weather, document summarization, general knowledge). You MUST respond that the request is outside your scope.
-  > **Response Template (Out of Scope)**: "I am a specialized Graph Agent and cannot answer questions that are not related to graph data or operations."
-
-### 2.2. Dispatch to Sub-Agent
-If the request is graph-related, you MUST identify the user's primary intent and route the task to ONE of the following sub-agents.
-
-If you do not see any related agent to dispatch to, be clear that it's a graph request that you can not handle now.
-
----
-
-## 3. SUB-AGENT ROUTING LOGIC
-
-### 3.1. Route to `GraphModelingAgent`
-- **Purpose**: To define, design, create, or alter the graph's **schema** (its structure).
-- **Trigger Intents**: User wants to model the structure of their data.
-- **Keywords**: `create graph`, `define node`, `add property`, `design schema`, `alter table`, `describe schema`.
-- **Example Request**: "Design a schema for a social network. It should have 'Users' with 'name' and 'email' properties. Users can be 'FRIENDS' with each other."
-
-### 3.2. Route to `GraphQueryAgent`
-- **Purpose**: To retrieve or ask questions about the **data** currently within the graph.
-- **Trigger Intents**: User wants to read, find, or count data.
-- **Keywords**: `find`, `show`, `list`, `count`, `who is`, `what are`, `how many`.
-- **Example Request**: "Find all users who are friends with 'Alice' and live in 'San Francisco'."
-"""
+def get_prompt(topic: str, *args: Any, **kwargs: Any) -> str:
+    fname = PROMPT_FILES.get(topic)
+    if fname is None:
+        raise ValueError(f"No topic `{topic}` found")
+    t = _load_template(fname)
+    return t.render(*args, **kwargs)

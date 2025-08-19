@@ -68,3 +68,9 @@ exclude = [
     'docs/*',
     'noxfile.py'
 ]
+
+[tool.setuptools.package-data]
+"graph_agents" = ["**/*.md"]
+
+[tool.setuptools]
+include-package-data = true

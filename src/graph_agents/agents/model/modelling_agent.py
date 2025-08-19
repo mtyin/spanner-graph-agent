@@ -1,19 +1,6 @@
 from google.adk.agents import LlmAgent
 
-from graph_agents.instructions.model.prompts import (
-    GRAPH_MODELLING_AGENT_DESCRIPTION,
-    GRAPH_MODELLING_AGENT_INSTRUCTIONS,
-)
-from graph_agents.instructions.model.prompts_modelling_new_graph import (
-    GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS,
-    NEW_GRAPH_MODELLING_AGENT_DESCRIPTION,
-    NEW_GRAPH_MODELLING_AGENT_INSTRUCTIONS,
-    SPANNER_GRAPH_SCHEMA_GENERATION_AGENT_INSTRUCTIONS,
-)
-from graph_agents.instructions.model.prompts_modelling_table_to_graph import (
-    TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_DESCRIPTION,
-    TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS,
-)
+from graph_agents.instructions.prompts import get_prompt
 
 
 class GraphLogicalSchemaModellingAgent(LlmAgent):
@@ -54,7 +41,7 @@ class GraphLogicalSchemaModellingAgent(LlmAgent):
             model=model,
             name="GraphLogicalSchemaModellingAgent",
             description="GraphLogicalSchemaModellingAgent",
-            instruction=GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS,
+            instruction=get_prompt("GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS"),
             tools=[],
         )
 
@@ -97,7 +84,9 @@ class SpannerGraphSchemaGenerationAgent(LlmAgent):
             model=model,
             name="SpannerGraphSchemaGenerationAgent",
             description="SpannerGraphSchemaGenerationAgent",
-            instruction=SPANNER_GRAPH_SCHEMA_GENERATION_AGENT_INSTRUCTIONS,
+            instruction=get_prompt(
+                "SPANNER_GRAPH_SCHEMA_GENERATION_AGENT_INSTRUCTIONS"
+            ),
             tools=[],
         )
 
@@ -111,8 +100,12 @@ class TableToGraphLogicalSchemaModellingAgent(LlmAgent):
         super().__init__(
             model=model,
             name="TableToGraphLogicalSchemaModellingAgent",
-            description=TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_DESCRIPTION,
-            instruction=TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS,
+            description=get_prompt(
+                "TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_DESCRIPTION"
+            ),
+            instruction=get_prompt(
+                "TABLE_TO_GRAPH_LOGICAL_SCHEMA_MODELLING_AGENT_INSTRUCTIONS"
+            ),
             tools=[],
         )
 
@@ -159,8 +152,8 @@ class NewGraphModellingAgent(LlmAgent):
         super().__init__(
             model=model,
             name="NewGraphModellingAgent",
-            description=NEW_GRAPH_MODELLING_AGENT_DESCRIPTION,
-            instruction=NEW_GRAPH_MODELLING_AGENT_INSTRUCTIONS,
+            description=get_prompt("NEW_GRAPH_MODELLING_AGENT_DESCRIPTION"),
+            instruction=get_prompt("NEW_GRAPH_MODELLING_AGENT_INSTRUCTIONS"),
             tools=[],
             sub_agents=[
                 GraphLogicalSchemaModellingAgent(model),
@@ -178,8 +171,8 @@ class GraphModellingAgent(LlmAgent):
         super().__init__(
             model=model,
             name="GraphModellingAgent",
-            description=GRAPH_MODELLING_AGENT_DESCRIPTION,
-            instruction=GRAPH_MODELLING_AGENT_INSTRUCTIONS,
+            description=get_prompt("GRAPH_MODELLING_AGENT_DESCRIPTION"),
+            instruction=get_prompt("GRAPH_MODELLING_AGENT_INSTRUCTIONS"),
             tools=[],
             sub_agents=[
                 NewGraphModellingAgent(model),

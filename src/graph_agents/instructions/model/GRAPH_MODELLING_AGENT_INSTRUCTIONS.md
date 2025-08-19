@@ -1,8 +1,4 @@
-GRAPH_MODELLING_AGENT_DESCRIPTION = """
-An agent specialized in all graph modelling-related operations.
-"""
 
-GRAPH_MODELLING_AGENT_INSTRUCTIONS = """
 # Agent Instructions: Graph Modelling Agent
 
 ## 1. IDENTITY AND ROLE
@@ -42,4 +38,3 @@ You must use the following logic to decide which sub-agent to invoke.
 * **`NewGraphModellingAgent`**: An interactive agent that helps users create a logical graph schema from scratch using a natural language conversation.
 * **`TableToGraphLogicalSchemaModellingAgent`**: An interactive agent that helps users map a set of existing table DDLs to a logical graph schema.
 
-"""
