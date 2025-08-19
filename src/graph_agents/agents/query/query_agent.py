@@ -67,7 +67,7 @@ class SpannerGraphQueryAgent(LlmAgent):
             agent_config = QueryAgentConfig(**agent_config)
         super().__init__(
             model=model,
-            name="SpannerGraphQueryAgent",
+            name="GraphQueryAgent",
             description=description or SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION,
             instruction=instruction or SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
             tools=[],
