@@ -21,18 +21,18 @@ from graph_agents import SpannerGraphQueryAgent
 # Load environment variables from .env
 load_dotenv()
 
-# root_agent = SpannerGraphQueryAgent(
-#     instance_id=os.environ["GOOGLE_SPANNER_INSTANCE"],
-#     database_id=os.environ["GOOGLE_SPANNER_DATABASE"],
-#     graph_id=os.environ["GOOGLE_SPANNER_GRAPH"],
-#     model="gemini-2.5-flash",
-#     project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", None),
-#     agent_config={
-#         "example_table": "gql_examples",
-#         "embedding_model": "text-embedding-004",
-#         "log_level": "DEBUG",
-#     },
-# )
+root_agent = SpannerGraphQueryAgent(
+    instance_id=os.environ["GOOGLE_SPANNER_INSTANCE"],
+    database_id=os.environ["GOOGLE_SPANNER_DATABASE"],
+    graph_id=os.environ["GOOGLE_SPANNER_GRAPH"],
+    model="gemini-2.5-flash",
+    project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", None),
+    agent_config={
+        "example_table": "gql_examples",
+        "embedding_model": "text-embedding-004",
+        "log_level": "DEBUG",
+    },
+)
 
 
 async def main():
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     asyncio.run(main())
 
 
-from graph_agents import GraphAgent
-
-root_agent = GraphAgent(
-    model="gemini-2.5-flash",
-)
+# from graph_agents import GraphAgent
+#
+# root_agent = GraphAgent(
+#     model="gemini-2.5-flash",
+# )
