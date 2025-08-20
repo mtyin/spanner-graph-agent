@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 from typing import Optional
 
 from google.adk.agents import LlmAgent
 
 from graph_agents.agents.model import GraphModellingAgent
-from graph_agents.agents.query import QueryAgentConfig, SpannerGraphQueryAgent
+from graph_agents.agents.query import SpannerGraphQueryAgent
 from graph_agents.instructions.prompts import get_prompt
 
 
@@ -59,28 +60,32 @@ class GraphAgent(LlmAgent):
             name="GraphAgent",
             description=get_prompt("GRAPH_AGENT_DESCRIPTION"),
             instruction=get_prompt("GRAPH_AGENT_INSTRUCTIONS"),
-            tools=[self._build_spanner_graph_query_agent],
+            tools=[self.add_sub_agent(SpannerGraphQueryAgent.create_query_agent)],
             sub_agents=[GraphModellingAgent(model)],
         )
 
-    def _build_spanner_graph_query_agent(
-        self,
-        instance_id: str,
-        database_id: str,
-        graph_id: str,
-        model: Optional[str] = None,
-        project_id: Optional[str] = None,
-        query_agent_config: QueryAgentConfig = QueryAgentConfig(),
-    ):
+    def add_sub_agent(self, agent_factory):
         """
-        Builds a query agent with the given configuration.
+        Add or replace a new sub agent constructed by `agent_factory`.
         """
-        query_agent = SpannerGraphQueryAgent(
-            instance_id,
-            database_id,
-            graph_id,
-            model or self.model,
-            project_id=project_id,
-            agent_config=query_agent_config,
-        )
-        self.sub_agents = [GraphModellingAgent(self.model), query_agent]
+
+        @functools.wraps(agent_factory)
+        def _add_sub_agent(*args, **kwargs):
+            kwargs.setdefault("parent_agent", self)
+            new_sub_agent = agent_factory(*args, **kwargs)
+            sub_agents = []
+            for sub_agent in self.sub_agents:
+                if sub_agent.name == new_sub_agent.name:
+                    # Replace existing agent with the same name.
+                    sub_agents.append(new_sub_agent)
+                    new_sub_agent = None
+                else:
+                    # Add back the existing sub agent.
+                    sub_agents.append(sub_agent)
+
+            if new_sub_agent is not None:
+                # Add the new sub agent.
+                sub_agents.append(new_sub_agent)
+            self.sub_agents = sub_agents
+
+        return _add_sub_agent

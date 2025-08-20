@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import asyncio
+import functools
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
@@ -70,18 +71,29 @@ class SpannerGraphQueryAgent(LlmAgent):
         instance_id: str,
         database_id: str,
         graph_id: str,
-        model: str,
+        model: str = "",
         project_id: Optional[str] = None,
         description: Optional[str] = None,
         instruction: Optional[str] = None,
-        agent_config: Union[Dict, QueryAgentConfig] = QueryAgentConfig(),
+        agent_config: QueryAgentConfig = QueryAgentConfig(),
+        name: str = "GraphQueryAgent",
         **kwargs: Any,
     ):
+        """
+        Build a GraphQueryAgent that talks with a Spanner Graph database
+        identified by (project_id, instance_id, database_id, graph_id).
+
+        Optional arguments:
+        - name: the name of the agent, by default, `GraphQueryAgent`;
+        - agent_config: detailed configuration of agent.
+
+        By default, project id is inferred from the environment.
+        """
         if isinstance(agent_config, dict):
             agent_config = QueryAgentConfig(**agent_config)
         super().__init__(
             model=model,
-            name="GraphQueryAgent",
+            name=name,
             description=description or SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION,
             instruction=instruction or SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
             tools=[],
@@ -89,7 +101,13 @@ class SpannerGraphQueryAgent(LlmAgent):
             agent_config=agent_config,
             **kwargs,
         )
+        self._config_log_level(agent_config)
         self.reload_tools()
+
+    @classmethod
+    @functools.wraps(__init__, assigned=("__doc__"))
+    def create_query_agent(cls, *args, **kwargs):
+        return cls(*args, **kwargs)
 
     def build_graph_query_tool(
         self,
@@ -183,6 +201,9 @@ class SpannerGraphQueryAgent(LlmAgent):
 
         This is useful when the underlying schema changes.
         """
+        # When model unspecified, we use the canonical model which can be
+        # inferred from the parent or ancestor agent.
+        self.model = self.model or self.canonical_model.model
         project_id, instance_id, database_id, graph_id = self.identifier
         client = spanner.Client(project=project_id)
         database = client.instance(instance_id).database(database_id)
