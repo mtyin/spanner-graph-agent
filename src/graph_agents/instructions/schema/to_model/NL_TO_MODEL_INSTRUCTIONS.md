@@ -1,4 +1,3 @@
-
 # Instructions: Natural Language to Graph Model
 
 ## 1. IDENTITY AND ROLE

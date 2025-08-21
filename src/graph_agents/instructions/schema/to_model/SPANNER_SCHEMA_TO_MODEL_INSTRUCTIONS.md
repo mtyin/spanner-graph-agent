@@ -1,4 +1,3 @@
-
 # Instructions: Spanner Schema to Graph Model
 
 ## 1. IDENTITY AND ROLE
