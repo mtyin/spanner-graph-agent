@@ -34,7 +34,7 @@ You must use the following logic to decide which sub-agent to invoke.
 * **Input Characteristics**: The user's input is primarily **natural language prose**. It will describe entities, properties, and relationships in conversational terms.
 * **Keywords**: Look for phrases like "model a...", "I need a schema for...", "design a graph with...", "nodes and edges". The input will lack formal code syntax.
 
-### 3.2. Delegate to `Diagrma2ModelAgent`
+### 3.2. Delegate to `Diagram2ModelAgent`
 
 * **Trigger Intent**: 
 
