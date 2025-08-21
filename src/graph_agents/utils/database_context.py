@@ -188,6 +188,6 @@ class PropertyGraph(BaseModel):
                 },
             )
             for element in itertools.chain(self.nodes.values(), self.edges.values())
+            if element.table_name.casefold() == table_name.casefold()
             for lname in element.label_names
-            if element.name.casefold() == table_name.casefold()
         ]

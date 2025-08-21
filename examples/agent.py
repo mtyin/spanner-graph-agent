@@ -16,7 +16,7 @@ import os
 
 from dotenv import load_dotenv
 
-from graph_agents import SpannerGraphQueryAgent
+from graph_agents import QueryAgentConfig, SpannerGraphQueryAgent
 
 # Load environment variables from .env
 load_dotenv()
@@ -27,11 +27,6 @@ root_agent = SpannerGraphQueryAgent(
     graph_id=os.environ["GOOGLE_SPANNER_GRAPH"],
     model="gemini-2.5-flash",
     project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", None),
-    agent_config={
-        "example_table": "gql_examples",
-        "embedding_model": "text-embedding-004",
-        "log_level": "DEBUG",
-    },
 )
 
 

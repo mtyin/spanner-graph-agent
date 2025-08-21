@@ -18,7 +18,7 @@ from google.adk.agents import BaseAgent
 from google.adk.artifacts import BaseArtifactService, InMemoryArtifactService
 from google.adk.events import Event
 from google.adk.runners import Runner
-from google.adk.sessions import Session, BaseSessionService, InMemorySessionService
+from google.adk.sessions import BaseSessionService, InMemorySessionService, Session
 from google.genai import types
 
 
@@ -64,14 +64,16 @@ class AgentSession(object):
             session_id=self.session_id,
         )
         assert self.session is not None
+        final_event = None
         async for event in self.runner.run_async(
             user_id=self.session.user_id,
             session_id=self.session.id,
             new_message=types.Content(role="user", parts=[types.Part(text=query)]),
         ):
             if event.is_final_response():
-                return event
-        return None
+                final_event = event
+                break
+        return final_event
 
     async def list_artifact_keys(self) -> List[str]:
         if self.session is None:

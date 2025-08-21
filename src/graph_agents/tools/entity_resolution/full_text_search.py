@@ -395,13 +395,15 @@ def _build_full_text_search_function(
         tokenlist_cols, table_cols, table_alias, column_aliases
     )
 
-    if search_criterias is None:
+    if not search_criterias:
+        logger.debug("Search criteria is not supported: `%s`" % index)
         return None
 
     key_column_with_aliases = _build_column_with_aliases(
         table_alias, index.table.key_columns, table_cols, column_aliases
     )
     if key_column_with_aliases is None:
+        logger.debug("Unable to build key column aliases: `%s`" % index)
         return None
 
     partition_columns_with_aliases = _build_column_with_aliases(
@@ -477,7 +479,7 @@ def _build_full_text_search_function(
     logger.debug(f"Built search query:\n\n{search_query}\n\n")
 
     def resolve_canonical_reference(
-        references: List[Reference],  # type: ignore[valid-type], this is a known mypy issue
+        references: List[Reference],  # type: ignore[valid-type]
         tool_context: ToolContext,
     ) -> List[ReferenceMapping]:
         try:

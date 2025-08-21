@@ -165,9 +165,13 @@ with tempfile.TemporaryDirectory() as temp_dir:
 
     print(f"Generated {len(investments)} investments.")
 
-    # Copy schema.ddl to the data directory
+    # Copy ddls to the data directory
     shutil.copy(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.ddl"), data_dir
+    )
+    shutil.copy(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "cleanup.ddl"),
+        data_dir,
     )
 
     # Copy evaluation directory if it exists

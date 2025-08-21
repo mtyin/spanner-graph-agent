@@ -46,16 +46,17 @@ class QueryAgentConfig(BaseModel):
         default=3, description="Num of GQL examples to show"
     )
     example_table: Optional[str] = Field(
-        default=None, description="Spanner table names that stores the gql examples"
+        default="gql_examples",
+        description="Spanner table names that stores the gql examples",
     )
     embedding_model: Optional[str] = Field(
-        default=None, description="Embedding model to get gql examples"
+        default="text-embedding-004", description="Embedding model to get gql examples"
     )
     enabled_indexes: Optional[List[str]] = Field(
         default=None, description="Enabled indexes"
     )
     enabled_index_types: Optional[List[str]] = Field(
-        default=None, description="Enabled index types"
+        default=["SEARCH"], description="Enabled index types"
     )
     log_level: str = Field(default="INFO", description="Log level.")
 

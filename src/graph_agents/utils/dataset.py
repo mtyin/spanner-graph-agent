@@ -69,14 +69,20 @@ class Dataset(object):
         return self._is_compressed
 
     def get_schema(self) -> str:
+        return self._read("schema.ddl")
+
+    def get_cleanup_ddl(self) -> str:
+        return self._read("cleanup.ddl")
+
+    def _read(self, fname) -> str:
         if self.is_compressed():
             with tarfile.open(self.path, "r:gz") as tar:
-                schema_file = tar.extractfile("./schema.ddl")
-                if not schema_file:
+                file = tar.extractfile(f"./{fname}")
+                if not file:
                     return ""
-                return schema_file.read().decode("utf-8")
+                return file.read().decode("utf-8")
         else:
-            with open(os.path.join(self.path, "schema.ddl"), "r") as f:
+            with open(os.path.join(self.path, fname), "r") as f:
                 return f.read()
 
     def load(
@@ -140,32 +146,23 @@ class Dataset(object):
         project: Optional[str] = None,
     ):
         logger.info(f"starting to cleanup dataset from {self.path}")
-        spanner_client = spanner.Client(project=project)
-        instance_obj = spanner_client.instance(instance)
-        database_obj = instance_obj.database(database)
-
-        logger.info("deleting edges")
-        self._delete_all_rows(database_obj, "edges")
-        logger.info("finished deleting edges")
-
-        logger.info("deleting nodes")
-        self._delete_all_rows(database_obj, "nodes")
-        logger.info("finished deleting nodes")
+        db = spanner.Client(project=project).instance(instance).database(database)
+        logger.info("applying ddl from cleanup.ddl")
+        ddl_statements = [
+            statement.strip()
+            for statement in self.get_cleanup_ddl().split(";")
+            if statement.strip()
+        ]
+        if ddl_statements:
+            operation = db.update_ddl(ddl_statements)
+            operation.result()  # Wait for completion
+        logger.info("finished applying ddl from cleanup.ddl")
 
         if self.is_compressed() and self._temp_dir is not None:
             shutil.rmtree(self._temp_dir)
             self._temp_dir = None
 
         logger.info(f"finished cleaning up dataset from {self.path}")
-
-    def _delete_all_rows(self, database: Database, component: str):
-        data_path = self._get_data_path(component)
-        for file_name in os.listdir(data_path):
-            if file_name.endswith(".csv"):
-                table_name = os.path.splitext(file_name)[0]
-                logger.info(f"deleting all rows from table {table_name}")
-                with database.batch() as batch:
-                    batch.delete(table=table_name, keyset=spanner.KeySet(all_=True))
 
     def _get_data_path(self, component: str) -> str:
         if self.is_compressed():
@@ -311,6 +308,8 @@ class Dataset(object):
         project: Optional[str] = None,
     ) -> AsyncGenerator[Tuple[str, Dict], None]:
         all_templates = self.load_evalution_templates()
+        if not all_templates:
+            return
         spanner_client = spanner.Client(project=project)
         db = spanner_client.instance(instance).database(database)
 

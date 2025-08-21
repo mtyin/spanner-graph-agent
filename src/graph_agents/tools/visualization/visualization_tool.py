@@ -34,10 +34,10 @@ def _build_visualization_tool(database: Database, graph_id: str):
 
     class CanonicalNodeReference(BaseModel):
         referenced_node_type: str = Field(
-            descrption="Node type of the canonical node reference"
+            description="Node type of the canonical node reference"
         )
         canonical_node_reference: Dict[str, Any] = Field(
-            descrption="Canonical reference of the node."
+            description="Canonical reference of the node."
         )
 
     async def visualize_subgraph(
