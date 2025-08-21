@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from graph_agents.agents.model.modelling_agent import GraphModellingAgent
+from graph_agents.agents.schema.orchestrator import GraphSchemaAgent
