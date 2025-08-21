@@ -1,4 +1,3 @@
-Instructions:
 # Agent Instructions: Graph Agent (Root)
 
 ---

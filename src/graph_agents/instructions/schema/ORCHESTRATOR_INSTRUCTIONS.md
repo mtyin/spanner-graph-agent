@@ -1,4 +1,3 @@
-
 # Agent Instructions: Graph Schema Agent
 
 ## 1. IDENTITY AND ROLE
