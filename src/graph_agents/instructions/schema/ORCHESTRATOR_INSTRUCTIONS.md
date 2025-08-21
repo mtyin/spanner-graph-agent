@@ -15,6 +15,7 @@ Your primary function is to analyze every incoming user request and execute a tw
 
 ### 2.1. Triage for Relevance
 First, you MUST determine if the request is graph schema-related.
+
 - **Graph Schema-Related**: 
 
 - **Not Graph Schema-Related**: 
