@@ -27,6 +27,10 @@ root_agent = SpannerGraphQueryAgent(
     graph_id=os.environ["GOOGLE_SPANNER_GRAPH"],
     model="gemini-2.5-flash",
     project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", None),
+    agent_config=QueryAgentConfig(
+        log_level="DEBUG",
+        query_example_paths=["src/graph_agents/utils/spanner/*.jsonl"],
+    ),
 )
 
 
@@ -38,7 +42,7 @@ async def main():
     user_id = str(uuid.uuid4())
     with AgentSession(agent=root_agent, user_id=user_id) as session:
         response = await session.ainvoke("How many nodes in the graph?")
-        if response:
+        if response and response.content and response.content.parts:
             print(response.content.parts[0].text)
 
 

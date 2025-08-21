@@ -13,6 +13,5 @@
 # limitations under the License.
 
 from graph_agents.tools.entity_resolution import SpannerFullTextSearchTool
-from graph_agents.tools.nl2gql import SpannerGraphQueryQATool
 from graph_agents.tools.schema_management import build_schema_inspection_tools
 from graph_agents.tools.visualization import SpannerGraphVisualizationTool

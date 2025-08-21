@@ -15,7 +15,7 @@
 import itertools
 from typing import Dict, List, Optional, Set
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class JsonField(BaseModel):
@@ -88,67 +88,34 @@ class PropertyGraph(BaseModel):
     property_declarations: Dict[str, PropertyDeclaration]
 
     def get_node_details(self, label: str):
-        label = label.casefold()
-        return {
-            "Properties": [
+        return NodeTypeDescriptor(
+            type=label,
+            properties=[
+                {
+                    "name": pname,
+                    "type": self.property_declarations[pname].type,
+                }
+                for pname in self.labels[label.casefold()].property_declaration_names
+            ],
+        )
+
+    def get_edge_details(self, label: str):
+        triplet_labels = self.get_triplet_labels()
+        return EdgeTypeDescriptor(
+            type=label,
+            properties=[
                 {
                     "name": pname,
                     "type": self.property_declarations[pname].type,
                 }
                 for pname in self.labels[label].property_declaration_names
-            ]
-        }
-
-    def get_edge_details(self, label: str):
-        label = label.casefold()
-        details = []
-        triplet_labels = self.get_triplet_labels()
-        for src_node_label, edge_label, dst_node_label in triplet_labels:
-            if label == edge_label.casefold():
-                details.append(
-                    {
-                        "Source node type": src_node_label,
-                        "Target node type": dst_node_label,
-                        "Properties": [
-                            {
-                                "name": pname,
-                                "type": self.property_declarations[pname].type,
-                            }
-                            for pname in self.labels[label].property_declaration_names
-                        ],
-                    }
-                )
-        return details
-
-    def get_triplet_details(
-        self, src_node_label: str, edge_label: str, dst_node_label: str
-    ):
-        src_node_label = src_node_label.casefold()
-        edge_label = edge_label.casefold()
-        dst_node_label = dst_node_label.casefold()
-        details = []
-        triplet_labels = self.get_triplet_labels()
-        for snl, el, dnl in triplet_labels:
-            if (
-                snl == src_node_label.casefold()
-                and el == edge_label.casefold()
-                and dnl == dst_node_label.casefold()
-            ):
-                details.append(
-                    {
-                        "Source node type": src_node_label,
-                        "Edge type": edge_label,
-                        "Target node type": dst_node_label,
-                        "Properties": [
-                            {
-                                "name": pname,
-                                "type": self.property_declarations[pname].type,
-                            }
-                            for pname in self.labels[el].property_declaration_names
-                        ],
-                    }
-                )
-        return details
+            ],
+            related_edge_patterns=[
+                f"(:{src_node_label})-[:{edge_label}]->(:{dst_node_label})"
+                for src_node_label, edge_label, dst_node_label in triplet_labels
+                if edge_label.casefold() == label.casefold()
+            ],
+        )
 
     def get_node_labels(self):
         return list(
@@ -191,3 +158,44 @@ class PropertyGraph(BaseModel):
             if element.table_name.casefold() == table_name.casefold()
             for lname in element.label_names
         ]
+
+    def to_descriptor(self):
+        return PropertyGraphDescriptor(
+            name=self.name,
+            nodes=[self.get_node_details(label) for label in self.get_node_labels()],
+            edges=[self.get_edge_details(label) for label in self.get_edge_labels()],
+        )
+
+
+# PropertyGraphDescriptor is a readable representation for PropertyGraph that is
+# used as context for LLM to do query generation.
+#
+# It consists mainly two differences comparing to PropertyGraph:
+#
+# - PropertyGraphDescriptor strips out information in PropertyGraph that isn't
+#   necessary for query generation. For example, the base table names, node/edge
+#   element table names. These information are not used during query time, hence
+#   may confuse LLM.
+#
+# - PropertyGraphDescriptor represents the schema in a more intuitive way.
+class NodeTypeDescriptor(BaseModel):
+    type: str = Field(description="type of node")
+    properties: List[Dict[str, str]] = Field(
+        description="A list of node properties of the given node type"
+    )
+
+
+class EdgeTypeDescriptor(BaseModel):
+    type: str = Field(description="type of edge")
+    properties: List[Dict[str, str]] = Field(
+        description="A list of node properties of the given node type"
+    )
+    related_edge_patterns: List[str] = Field(
+        description="A list of possible edge patterns related to given edge type, in the form of (:SourceNodeType)-[:EdgeType]->(:TargetNodeType)."
+    )
+
+
+class PropertyGraphDescriptor(BaseModel):
+    name: str = Field(description="Name of graph")
+    nodes: List[NodeTypeDescriptor] = Field(description="List of node type descriptors")
+    edges: List[EdgeTypeDescriptor] = Field(description="List of edge type descriptors")

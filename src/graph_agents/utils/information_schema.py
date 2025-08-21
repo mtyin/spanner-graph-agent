@@ -1,23 +1,7 @@
-# Copyright 2025 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import asyncio
 import logging
 import re
 from typing import List, Optional
-
-from google.cloud.spanner_v1.database import Database
 
 from graph_agents.utils.database_context import (
     Column,
@@ -32,6 +16,7 @@ from graph_agents.utils.database_context import (
     PropertyGraph,
     Table,
 )
+from graph_agents.utils.engine import Engine
 
 logger = logging.getLogger("graph_agents." + __name__)
 
@@ -40,12 +25,12 @@ class InformationSchema(object):
 
     def __init__(
         self,
-        database: Database,
+        engine: Engine,
     ):
-        self.database = database
+        self._engine = engine
 
     def get_table(self, name: str) -> Optional[Table]:
-        results = self._query(self._get_table_query(name))
+        results = self._engine.query(self._get_table_query(name)).results
         if len(results) == 0:
             return None
         table = results[0]
@@ -61,9 +46,9 @@ class InformationSchema(object):
         enabled_types: Optional[List[str]] = None,
     ) -> List[Index]:
         indexes = []
-        for index_config in self._query(
+        for index_config in self._engine.query(
             self._get_index_query(enabled_indexes, enabled_types)
-        ):
+        ).results:
             columns = [
                 Column(name=name, type=type, expr=expr)
                 for (name, type, expr) in index_config["columns"]
@@ -81,7 +66,7 @@ class InformationSchema(object):
         return indexes
 
     def get_property_graph(self, name: str) -> Optional[PropertyGraph]:
-        results = self._query(self._get_property_graph_query(name))
+        results = self._engine.query(self._get_property_graph_query(name)).results
         if len(results) == 0:
             return None
         graph_json = results[0]["property_graph_metadata_json"]
@@ -262,12 +247,12 @@ class InformationSchema(object):
                             json_object_name=pname,
                             json_fields=[
                                 JsonField(**row)
-                                for row in self._query(
+                                for row in self._engine.query(
                                     self._get_json_schema_query(
                                         node.table_name,
                                         node.property_definitions[pname].expr,
                                     )
-                                )
+                                ).results
                             ],
                         )
                     )
@@ -283,26 +268,13 @@ class InformationSchema(object):
                             json_object_name=pname,
                             json_fields=[
                                 JsonField(**row)
-                                for row in self._query(
+                                for row in self._engine.query(
                                     self._get_json_schema_query(
                                         edge.table_name,
                                         edge.property_definitions[pname].expr,
                                     )
-                                )
+                                ).results
                             ],
                         )
                     )
         return results
-
-    def _query(self, q: str):
-        with self.database.snapshot() as snapshot:
-            rows = snapshot.execute_sql(q)
-            return [
-                {
-                    column: value
-                    for column, value in zip(
-                        [column.name for column in rows.fields], row
-                    )
-                }
-                for row in rows
-            ]

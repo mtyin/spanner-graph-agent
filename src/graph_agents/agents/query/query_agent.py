@@ -1,53 +1,39 @@
-# Copyright 2025 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import asyncio
 import functools
 import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from google.adk.agents import LlmAgent
-from google.adk.tools import FunctionTool
-from google.cloud import spanner
-from google.cloud.spanner_v1.database import Database
+from google.adk.agents import LlmAgent, LoopAgent
+from google.adk.tools import FunctionTool, ToolContext
 from pydantic import BaseModel, Field
+from typing_extensions import override
 
-from graph_agents.instructions.query.prompts import (
-    SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION,
-    SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
-    SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE,
-)
-from graph_agents.tools import (
-    SpannerFullTextSearchTool,
-    SpannerGraphQueryQATool,
-    SpannerGraphVisualizationTool,
-    build_schema_inspection_tools,
-)
+from graph_agents.instructions.prompts import get_prompt
+from graph_agents.tools import build_schema_inspection_tools
+from graph_agents.tools.nl2gql.nl2gql import GraphQueryGenerationContextTool
 from graph_agents.utils.database_context import Index, PropertyGraph
+from graph_agents.utils.embeddings import Embeddings
+from graph_agents.utils.engine import Engine
+from graph_agents.utils.example_store import ExampleStore, QueryExample, QueryFixExample
 from graph_agents.utils.information_schema import InformationSchema
+from graph_agents.utils.json import to_json
 
 logger = logging.getLogger("graph_agents." + __name__)
 
 
 class QueryAgentConfig(BaseModel):
-    num_gql_examples: Optional[int] = Field(
-        default=3, description="Num of GQL examples to show"
+    num_gql_examples: int = Field(default=3, description="Num of GQL examples to show")
+    max_iterations: int = Field(
+        default=3, description="Max number trials to generate query and execute"
     )
     example_table: Optional[str] = Field(
         default="gql_examples",
-        description="Spanner table names that stores the gql examples",
+        description="Table names that stores the gql examples",
+    )
+    query_example_paths: List[str] = Field(
+        default=[],
+        description="A list of paths to default query example files",
     )
     embedding_model: Optional[str] = Field(
         default="text-embedding-004", description="Embedding model to get gql examples"
@@ -59,76 +45,98 @@ class QueryAgentConfig(BaseModel):
         default=["SEARCH"], description="Enabled index types"
     )
     log_level: str = Field(default="INFO", description="Log level.")
+    timeout: int = Field(
+        default=30, description="Default timeout in seconds for engine APIs."
+    )
 
 
-class SpannerGraphQueryAgent(LlmAgent):
+def exit_loop(tool_context: ToolContext):
+    """Call this function when we successfully generate and excutive a valid
+    graph query and have sufficiently knowledge to answer the user query.
+    """
+    logger.info("Exit the loop...")
+    tool_context.actions.escalate = True
+    return []
 
-    identifier: Tuple[Optional[str], str, str, str]
-    agent_config: QueryAgentConfig
-    gql_query_tool: Optional[SpannerGraphQueryQATool] = None
+
+class GraphQueryQAAgent(LlmAgent):
 
     def __init__(
         self,
-        instance_id: str,
-        database_id: str,
+        engine,
+        query_generation_tool,
+        model: str,
+        name: str = "",
+        description: Optional[str] = None,
+        instruction: Optional[str] = None,
+    ):
+        super().__init__(
+            model=model,
+            name=name or "GraphQueryQAAgent",
+            tools=[
+                query_generation_tool,
+                FunctionTool(to_json(engine.query)),
+                exit_loop,
+            ],
+            description=description
+            or get_prompt(
+                "GRAPH_QUERY_QA_AGENT_DEFAULT_DESCRIPTION", product=engine.name()
+            ),
+            instruction=instruction
+            or get_prompt("GRAPH_QUERY_QA_AGENT_DEFAULT_INSTRUCTIONS"),
+        )
+
+
+class GraphQueryAgent(LlmAgent):
+
+    graph_id: str
+    engine: Engine
+    example_store: Optional[ExampleStore]
+    agent_config: QueryAgentConfig
+    gql_query_tool: Optional[GraphQueryGenerationContextTool] = None
+
+    def __init__(
+        self,
         graph_id: str,
+        engine: Engine,
         model: str = "",
-        project_id: Optional[str] = None,
         description: Optional[str] = None,
         instruction: Optional[str] = None,
         agent_config: QueryAgentConfig = QueryAgentConfig(),
         name: str = "GraphQueryAgent",
+        example_store: Optional[ExampleStore] = None,
         **kwargs: Any,
     ):
-        """
-        Build a GraphQueryAgent that talks with a Spanner Graph database
-        identified by (project_id, instance_id, database_id, graph_id).
-
-        Optional arguments:
-        - name: the name of the agent, by default, `GraphQueryAgent`;
-        - agent_config: detailed configuration of agent.
-
-        By default, project id is inferred from the environment.
-        """
         if isinstance(agent_config, dict):
             agent_config = QueryAgentConfig(**agent_config)
         super().__init__(
             model=model,
             name=name,
-            description=description or SPANNER_GRAPH_AGENT_DEFAULT_DESCRIPTION,
-            instruction=instruction or SPANNER_GRAPH_AGENT_DEFAULT_INSTRUCTIONS,
-            tools=[],
-            identifier=(project_id, instance_id, database_id, graph_id),
+            description=description
+            or get_prompt(
+                "GRAPH_QUERY_AGENT_DEFAULT_DESCRIPTION", product=engine.name()
+            ),
+            instruction=instruction
+            or get_prompt("GRAPH_QUERY_AGENT_DEFAULT_INSTRUCTIONS"),
+            graph_id=graph_id,
+            engine=engine,
+            example_store=example_store,
             agent_config=agent_config,
+            tools=[],
             **kwargs,
         )
         self._config_log_level(agent_config)
         self.reload_tools()
 
-    @classmethod
-    @functools.wraps(__init__, assigned=("__doc__"))
-    def create_query_agent(cls, *args, **kwargs):
-        return cls(*args, **kwargs)
+    def reload_extra_tools(self):
+        return []
 
-    def build_graph_query_tool(
-        self,
-        database: Database,
-        property_graph: PropertyGraph,
-        model: str,
-        agent_config: QueryAgentConfig,
-    ):
-        gql_query_tool_description = (
-            SPANNER_GRAPH_QUERY_QA_TOOL_DEFAULT_DESCRIPTION_TEMPLATE.format(
-                node_labels=json.dumps(property_graph.get_node_labels(), indent=1),
-                edge_labels=json.dumps(property_graph.get_triplet_labels(), indent=1),
-            )
-        )
-        return SpannerGraphQueryQATool(
-            database,
-            property_graph.name,
-            model,
-            gql_query_tool_description,
-            agent_config.model_dump(),
+    def build_graph_query_tool(self):
+        return GraphQueryGenerationContextTool(
+            self.engine,
+            self.graph_id,
+            self.example_store,
+            num_gql_examples=self.agent_config.num_gql_examples,
         )
 
     def _config_log_level(self, agent_config: QueryAgentConfig):
@@ -146,85 +154,64 @@ class SpannerGraphQueryAgent(LlmAgent):
         )
         logging.getLogger("graph_agents").setLevel(level)
 
-    def infer_tools_from_indexes(
-        self,
-        database: Database,
-        information_schema: InformationSchema,
-        property_graph: PropertyGraph,
-        agent_config: QueryAgentConfig,
-    ):
-        enabled_indexes = agent_config.enabled_indexes
-        enabled_types = agent_config.enabled_index_types
-        all_indexes = information_schema.get_indexes(
-            enabled_indexes=enabled_indexes,
-            enabled_types=enabled_types,
-        )
-        tools = []
-        for index in all_indexes:
-            label_with_aliases = property_graph.get_label_and_properties(
-                index.table.name
-            )
-            if not label_with_aliases:
-                logger.debug(f"Skipped index: {index.name}")
-                continue
-            for label_name, column_aliases in label_with_aliases:
-                tool = None
-                if index.type == "SEARCH":
-                    tool = SpannerFullTextSearchTool.build_from_index(
-                        database,
-                        index,
-                        table_alias=label_name,
-                        column_aliases=column_aliases,
-                    )
-                if not tool:
-                    logger.info(f"Skipped index for label `{label_name}`: {index.name}")
-                    continue
-
-                logger.info(
-                    f"Added a tool built for label `{label_name}` from the index:"
-                    f" {index.name}"
-                )
-                tools.append(tool)
-        return tools
-
-    def build_schema_tools(
-        self, information_schema: InformationSchema, property_graph: PropertyGraph
-    ):
+    def build_schema_tools(self, information_schema: InformationSchema):
         return [
             FunctionTool(func)
-            for func in build_schema_inspection_tools(
-                information_schema, property_graph
-            )
+            for func in build_schema_inspection_tools(information_schema, self.graph_id)
         ]
 
     def reload_tools(self):
-        """Reload the agent tools.
-
-        This is useful when the underlying schema changes.
-        """
+        """Reload the agent tools."""
         # When model unspecified, we use the canonical model which can be
         # inferred from the parent or ancestor agent.
         self.model = self.model or self.canonical_model.model
-        project_id, instance_id, database_id, graph_id = self.identifier
-        client = spanner.Client(project=project_id)
-        database = client.instance(instance_id).database(database_id)
-        information_schema = InformationSchema(database)
-        property_graph = information_schema.get_property_graph(graph_id)
+        information_schema = InformationSchema(self.engine)
+        property_graph = information_schema.get_property_graph(self.graph_id)
         if property_graph is None:
-            raise ValueError(f"No graph with name `{graph_id}` found")
+            raise ValueError(f"No graph with name `{self.graph_id}` found")
 
-        tools = self.infer_tools_from_indexes(
-            database, information_schema, property_graph, self.agent_config
-        )
-        self.gql_query_tool = self.build_graph_query_tool(
-            database, property_graph, self.model, self.agent_config
-        )
-        tools.append(self.gql_query_tool)
-        tools.append(SpannerGraphVisualizationTool(database, property_graph.name))
-        tools.extend(self.build_schema_tools(information_schema, property_graph))
+        self.gql_query_tool = self.build_graph_query_tool()
+        tools = []
+        tools.extend(self.build_schema_tools(information_schema))
+        tools.extend(self.reload_extra_tools())
         tools.append(FunctionTool(self.reload_tools))
+        if self.example_store:
+            tools.append(FunctionTool(self.add_examples))
+            tools.append(FunctionTool(self.add_fix_examples))
+            if self.agent_config.query_example_paths:
+                cnt = self.example_store.load_examples(
+                    self.agent_config.query_example_paths
+                )
+                logger.info(
+                    f"Loaded {cnt} examples from {self.agent_config.query_example_paths}"
+                )
+        self.sub_agents = [
+            LoopAgent(
+                name="GraphQueryQAWithRetryAgent",
+                description="",
+                max_iterations=self.agent_config.max_iterations,
+                sub_agents=[
+                    GraphQueryQAAgent(
+                        self.engine, self.gql_query_tool, model=self.model
+                    )
+                ],
+            )
+        ]
         for tool in tools:
             logger.debug(
                 f"Tool: {tool.name}\n" + f"Description: {tool.description}\n\n"
             )
         self.tools = tools
+
+    def add_examples(self, examples: List[QueryExample]):
+        """Add graph query examples that can be referred as contextual information during query generation."""
+        if self.example_store is None:
+            raise ValueError("No example store configured")
+        self.example_store.add_examples(examples)
+
+    def add_fix_examples(self, examples: List[QueryFixExample]):
+        """Add graph query fix examples that can be referred as contextual information when try to fix an invalid graph query."""
+
+        if self.example_store is None:
+            raise ValueError("No example store configured")
+        self.example_store.add_fix_examples(examples)

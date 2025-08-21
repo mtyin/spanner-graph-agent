@@ -25,7 +25,7 @@ from google.cloud import spanner
 from google.cloud.spanner_v1 import param_types
 from google.genai import types
 
-from graph_agents import SpannerGraphQueryAgent
+from graph_agents import QueryAgentConfig, SpannerGraphQueryAgent
 from graph_agents.utils.dataset import Dataset
 
 # Load environment variables from .env
@@ -104,13 +104,10 @@ agent = SpannerGraphQueryAgent(
     graph_id=graph_id,
     model="gemini-2.5-flash",
     project_id=project,
-    agent_config={
-        "example_table": "gql_examples",
-        "embedding": "text-embedding-004",
-        "verify_gql": False,
-        "log_level": None,
-        "return_intermediate_steps": False,
-    },
+    agent_config=QueryAgentConfig(
+        example_table="gql_examples",
+        embedding_model="text-embedding-004",
+    ),
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(thinking_budget=0)),
 )
 

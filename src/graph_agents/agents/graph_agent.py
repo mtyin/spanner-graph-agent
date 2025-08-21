@@ -18,7 +18,7 @@ from typing import Optional
 from google.adk.agents import LlmAgent
 
 from graph_agents.agents.model import GraphModellingAgent
-from graph_agents.agents.query import SpannerGraphQueryAgent
+from graph_agents.agents.query.spanner import SpannerGraphQueryAgent
 from graph_agents.instructions.prompts import get_prompt
 
 

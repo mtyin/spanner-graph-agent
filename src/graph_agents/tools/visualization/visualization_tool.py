@@ -18,19 +18,20 @@ from threading import Thread
 from typing import Any, Dict, List, Optional
 
 from google.adk.tools import FunctionTool, ToolContext
-from google.cloud.spanner_v1.database import Database
 from google.genai import types
 from pydantic import BaseModel, Field
 from spanner_graphs.graph_server import GraphServer
 from spanner_graphs.graph_visualization import generate_visualization_html
 from typing_extensions import override
 
+from graph_agents.utils.spanner.engine import SpannerEngine
+
 logger = logging.getLogger("graph_agents." + __name__)
 
 singleton_server_thread: Optional[Thread] = None
 
 
-def _build_visualization_tool(database: Database, graph_id: str):
+def _build_visualization_tool(engine: SpannerEngine, graph_id: str):
 
     class CanonicalNodeReference(BaseModel):
         referenced_node_type: str = Field(
@@ -99,6 +100,7 @@ def _build_visualization_tool(database: Database, graph_id: str):
                 )
         query = f"GRAPH {graph_id}\n" + "\nUNION ALL\n".join(pieces)
         logger.debug("Visualize the query:\n%s" % query)
+        database = engine._database
         html = generate_visualization_html(
             query=query,
             port=GraphServer.port,
@@ -126,11 +128,11 @@ def _build_visualization_tool(database: Database, graph_id: str):
 
 class SpannerGraphVisualizationTool(FunctionTool):
 
-    def __init__(self, database: Database, graph_id: str):
-        self.database = database
+    def __init__(self, engine: SpannerEngine, graph_id: str):
+        self.engine = engine
         self.graph_id = graph_id
         self.visualization_function = _build_visualization_tool(
-            self.database, self.graph_id
+            self.engine, self.graph_id
         )
         super().__init__(self.visualization_function)
 

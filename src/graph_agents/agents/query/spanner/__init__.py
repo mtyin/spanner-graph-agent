@@ -12,4 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from graph_agents.tools.nl2gql.nl2gql import GraphQueryGenerationContextTool
+from graph_agents.agents.query.spanner.spanner_graph_query_agent import (
+    SpannerGraphQueryAgent,
+)

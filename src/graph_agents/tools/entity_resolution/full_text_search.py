@@ -17,13 +17,12 @@ import re
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 from google.adk.tools import FunctionTool, ToolContext
-from google.cloud import spanner
-from google.cloud.spanner_v1.database import Database
 from google.genai import types
 from pydantic import BaseModel, Field, create_model
 from typing_extensions import override
 
 from graph_agents.utils.database_context import Column, Index
+from graph_agents.utils.engine import Engine
 
 logger = logging.getLogger("graph_agents." + __name__)
 
@@ -149,18 +148,6 @@ def _get_python_type_from_spanner_type(spanner_type: str):
     return None
 
 
-def _get_spanner_param_type_from_value(v: Any):
-    if isinstance(v, str):
-        return spanner.param_types.STRING
-    if isinstance(v, bytes):
-        return spanner.param_types.BYTES
-    if isinstance(v, int):
-        return spanner.param_types.INT64
-    if isinstance(v, float):
-        return spanner.param_types.FLOAT64
-    return None
-
-
 def _create_model(
     model_name: str,
     columns: List[ColumnWithAlias],
@@ -187,37 +174,12 @@ def _get_alias(name: str, aliases: Optional[Dict[str, str]] = None) -> Optional[
     return aliases.get(name.casefold())
 
 
-def _query(database, query, params=None):
-    param_types = (
-        {
-            field_name: _get_spanner_param_type_from_value(val)
-            for field_name, val in params.items()
-        }
-        if params
-        else None
-    )
-    try:
-        with database.snapshot() as snapshot:
-            rows = snapshot.execute_sql(query, params=params, param_types=param_types)
-            return [
-                {
-                    column: value
-                    for column, value in zip(
-                        [column.name for column in rows.fields], row
-                    )
-                }
-                for row in rows
-            ]
-    except Exception as e:
-        logger.error(f"Query failed: `{e}`")
-    return []
-
-
-def _get_example_reference(database, query, reference_model, canonical_reference_model):
+def _get_example_reference(engine, query, reference_model, canonical_reference_model):
     example_reference, example_canonical_reference = None, None
-    values = _query(database, query)
+    query_results = engine.query(query)
+    values = query_results.results
     if not values:
-        logger.error("No example found by the query")
+        logger.error(f"No example found by the query: {query_results.error_message}")
         return None, None
 
     value = values[0]
@@ -379,7 +341,7 @@ def _build_column_with_aliases(
 
 
 def _build_full_text_search_function(
-    database: Database,
+    engine: Engine,
     index: Index,
     top_k: int,
     include_all_index_fields: bool = False,
@@ -491,7 +453,13 @@ def _build_full_text_search_function(
             results = []
             for reference in references:
                 params = {field_name: ref for field_name, ref in reference}  # type: ignore[attr-defined]
-                values = _query(database, search_query, params=params)
+                query_results = engine.query(search_query, params=params)
+                values = query_results.results
+                if query_results.error_message:
+                    logger.error(
+                        f"Failed to resolve reference: {query_results.error_message}"
+                    )
+                    continue
                 if values:
                     canonical_refs = [CanonicalReference(**value) for value in values]
                     results.append(
@@ -523,7 +491,7 @@ def _build_full_text_search_function(
         )
         logger.debug(f"Built example query:\n\n{example_query}\n\n")
         example_reference, example_canonical_references = _get_example_reference(
-            database, example_query, Reference, CanonicalReference
+            engine, example_query, Reference, CanonicalReference
         )
     fields = "_".join(Reference.model_fields)
     resolve_canonical_reference.__name__, resolve_canonical_reference.__doc__ = (
@@ -544,7 +512,7 @@ class SpannerFullTextSearchTool(FunctionTool):
     # TODO(mtyin): Consider add score-based filtering.
     @staticmethod
     def build_from_index(
-        database: Database,
+        engine: Engine,
         index: Index,
         include_all_index_fields: bool = False,
         include_examples: bool = True,
@@ -555,7 +523,7 @@ class SpannerFullTextSearchTool(FunctionTool):
         column_aliases: Optional[Dict[str, str]] = None,
     ) -> Optional[FunctionTool]:
         function = _build_full_text_search_function(
-            database,
+            engine,
             index,
             top_k=top_k,
             include_all_index_fields=include_all_index_fields,
@@ -565,11 +533,11 @@ class SpannerFullTextSearchTool(FunctionTool):
         )
         if function is None:
             return None
-        return SpannerFullTextSearchTool(database, index, function)
+        return SpannerFullTextSearchTool(engine, index, function)
 
-    def __init__(self, database: Database, index: Index, function: Callable):
+    def __init__(self, engine: Engine, index: Index, function: Callable):
         super().__init__(function)
-        self.database = database
+        self.engine = engine
         self.index = index
 
     def _get_declaration(self) -> Optional[types.FunctionDeclaration]:
