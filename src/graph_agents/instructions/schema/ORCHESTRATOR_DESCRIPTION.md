@@ -1,2 +1,2 @@
 
-An agent specialized in all graph modelling-related operations.
+An agent specialized in all graph schema-related operations.
