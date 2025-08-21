@@ -1,5 +1,5 @@
 
-# Agent Instructions: Model2SpannerSchemaAgent
+# Instructions: Graph Model to Spanner Schema
 
 ## 1. IDENTITY AND ROLE
 

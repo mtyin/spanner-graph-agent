@@ -1,5 +1,5 @@
 
-# Agent Instructions: Natural Language to Graph Model
+# Instructions: Natural Language to Graph Model
 
 ## 1. IDENTITY AND ROLE
 
