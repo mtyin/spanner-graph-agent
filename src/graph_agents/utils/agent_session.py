@@ -18,8 +18,7 @@ from google.adk.agents import BaseAgent
 from google.adk.artifacts import BaseArtifactService, InMemoryArtifactService
 from google.adk.events import Event
 from google.adk.runners import Runner
-from google.adk.session import Session
-from google.adk.sessions import BaseSessionService, InMemorySessionService
+from google.adk.sessions import Session, BaseSessionService, InMemorySessionService
 from google.genai import types
 
 

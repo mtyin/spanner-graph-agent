@@ -409,16 +409,17 @@ def _build_full_text_search_function(
     )
     if partition_columns_with_aliases is None:
         return None
-
-    Reference = _create_model(
+    reference_model = _create_model(
         f"UserProvided{table_alias}Reference",
         partition_columns_with_aliases
         + [criteria.tokenized_column for criteria in search_criterias],
     )
 
-    if Reference is None:
+    if reference_model is None:
         logger.warning(f"Unable to build UserProvided{table_alias}Reference data model")
         return None
+
+    Reference: Type[BaseModel] = reference_model
     logger.debug(
         f"Built UserProvided{table_alias}Reference data model:\n"
         + str(Reference.model_json_schema())
@@ -476,7 +477,7 @@ def _build_full_text_search_function(
     logger.debug(f"Built search query:\n\n{search_query}\n\n")
 
     def resolve_canonical_reference(
-        references: List[BaseModel],
+        references: List[Reference],  # type: ignore[valid-type], this is a known mypy issue
         tool_context: ToolContext,
     ) -> List[ReferenceMapping]:
         try:
@@ -487,7 +488,7 @@ def _build_full_text_search_function(
 
             results = []
             for reference in references:
-                params = {field_name: ref for field_name, ref in reference}
+                params = {field_name: ref for field_name, ref in reference}  # type: ignore[attr-defined]
                 values = _query(database, search_query, params=params)
                 if values:
                     canonical_refs = [CanonicalReference(**value) for value in values]
