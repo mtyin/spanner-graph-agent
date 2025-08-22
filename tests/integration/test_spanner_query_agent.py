@@ -6,7 +6,6 @@ import uuid
 
 import pytest
 from dotenv import load_dotenv
-from google.cloud import spanner
 from spanner_graphs.graph_server import GraphServer
 
 from graph_agents import QueryAgentConfig, SpannerGraphQueryAgent
@@ -118,7 +117,6 @@ def session(request, dataset, use_full_text_search):
         os.environ["GOOGLE_SPANNER_DATABASE"],
         os.environ.get("GOOGLE_CLOUD_PROJECT", None),
     )
-    db = spanner.Client(project).instance(instance).database(database)
     user_id = str(uuid.uuid4())
     root_agent = SpannerGraphQueryAgent(
         instance_id=instance,
