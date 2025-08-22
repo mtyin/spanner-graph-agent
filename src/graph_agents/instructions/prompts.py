@@ -21,24 +21,24 @@ PROMPT_FILES = {
     # Graph
     "GRAPH_AGENT_DESCRIPTION": "GRAPH_AGENT_DESCRIPTION.md",
     "GRAPH_AGENT_INSTRUCTIONS": "GRAPH_AGENT_INSTRUCTIONS.md",
-    # Schema orchestrator
-    "SCHEMA_ORCHESTRATOR_DESCRIPTION": "schema/ORCHESTRATOR_DESCRIPTION.md",
-    "SCHEMA_ORCHESTRATOR_INSTRUCTIONS": "schema/ORCHESTRATOR_INSTRUCTIONS.md",
-    # Schema Diagram2Model
-    "DIAGRAM_TO_MODEL_DESCRIPTION": "schema/to_model/DIAGRAM_TO_MODEL_DESCRIPTION.md",
-    "DIAGRAM_TO_MODEL_INSTRUCTIONS": "schema/to_model/DIAGRAM_TO_MODEL_INSTRUCTIONS.md",
-    # Schema NL2Model
-    "NL_TO_MODEL_DESCRIPTION": "schema/to_model/NL_TO_MODEL_DESCRIPTION.md",
-    "NL_TO_MODEL_INSTRUCTIONS": "schema/to_model/NL_TO_MODEL_INSTRUCTIONS.md",
-    # Schema SpannerSchema2Model
-    "SPANNER_SCHEMA_TO_MODEL_DESCRIPTION": "schema/to_model/SPANNER_SCHEMA_TO_MODEL_DESCRIPTION.md",
-    "SPANNER_SCHEMA_TO_MODEL_INSTRUCTIONS": "schema/to_model/SPANNER_SCHEMA_TO_MODEL_INSTRUCTIONS.md",
-    # Schema Model2SpannerSchema
-    "MODEL_TO_SPANNER_SCHEMA_DESCRIPTION": "schema/to_schema/MODEL_TO_SPANNER_SCHEMA_DESCRIPTION.md",
-    "MODEL_TO_SPANNER_SCHEMA_INSTRUCTIONS": "schema/to_schema/MODEL_TO_SPANNER_SCHEMA_INSTRUCTIONS.md",
-    # Construction Diagram2Data
-    "DIAGRAM_TO_DATA_DESCRIPTION": "construction/DIAGRAM_TO_DATA_DESCRIPTION.md",
-    "DIAGRAM_TO_DATA_INSTRUCTIONS": "construction/DIAGRAM_TO_DATA_INSTRUCTIONS.md",
+    # schema Orchestrator
+    "schema_orchestrator_description": "schema/orchestrator_description.md",
+    "schema_orchestrator_instructions": "schema/orchestrator_instructions.md",
+    # schema Diagram2Model
+    "diagram_to_model_description": "schema/to_model/from_er_description.md",
+    "diagram_to_model_instructions": "schema/to_model/from_er_instructions.md",
+    # schema Ml2Model
+    "nl_to_model_description": "schema/to_model/from_nl_description.md",
+    "nl_to_model_instructions": "schema/to_model/from_nl_instructions.md",
+    # schema SpannerSchema2Model
+    "spanner_schema_to_model_description": "schema/to_model/from_spanner_schema_description.md",
+    "spanner_schema_to_model_instructions": "schema/to_model/from_spanner_schema_instructions.md",
+    # schema Model2SpannerSchema
+    "model_to_spanner_schema_description": "schema/to_schema/model_to_spanner_schema_description.md",
+    "model_to_spanner_schema_instructions": "schema/to_schema/model_to_spanner_schema_instructions.md",
+    # construction Diagram2Data
+    "diagram_to_data_description": "construction/diagram_to_data_description.md",
+    "diagram_to_data_instructions": "construction/diagram_to_data_instructions.md",
 }
 
 def _load_template(filename: str) -> Template:
