@@ -53,7 +53,7 @@ class NL2ModelAgent(LlmAgent):
         super().__init__(
             model=model,
             name="NL2ModelAgent",
-            description="An agent that interactively help users translate a diagram (e.g. flowchart) into a graph model.",
-            instruction=get_prompt("nl_to_model_instructions"),
+            description="An agent that helps users translate natural languages into a graph model.",
+            instruction=get_prompt("nl_to_model"),
             tools=[],
         )

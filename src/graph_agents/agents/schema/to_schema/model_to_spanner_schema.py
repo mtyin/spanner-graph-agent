@@ -54,6 +54,6 @@ class Model2SpannerSchemaAgent(LlmAgent):
             model=model,
             name="Model2SpannerSchemaAgent",
             description="An agent that translates a graph model, provided in a specific JSON format, into a Spanner Graph schema.",
-            instruction=get_prompt("model_to_spanner_schema_instructions"),
+            instruction=get_prompt("model_to_spanner_schema"),
             tools=[],
         )

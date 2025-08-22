@@ -16,7 +16,7 @@ from google.adk.agents import LlmAgent
 
 from graph_agents.instructions.prompts import get_prompt
 
-class Diagram2ModelAgent(LlmAgent):
+class ERDiagram2ModelAgent(LlmAgent):
 
     def __init__(
         self,
@@ -24,8 +24,8 @@ class Diagram2ModelAgent(LlmAgent):
     ):
         super().__init__(
             model=model,
-            name="Diagram2ModelAgent",
-            description=get_prompt("DIAGRAM_TO_MODEL_DESCRIPTION"),
-            instruction=get_prompt("DIAGRAM_TO_MODEL_INSTRUCTIONS"),
+            name="ERDiagram2ModelAgent",
+            description="An agent that helps users translate a ER diagram into a graph model.",
+            instruction=get_prompt("er_diagram_to_model"),
             tools=[],
         )

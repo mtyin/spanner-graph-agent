@@ -25,8 +25,8 @@ class SpannerSchema2ModelAgent(LlmAgent):
         super().__init__(
             model=model,
             name="SpannerSchema2ModelAgent",
-            description="An agent that interactively help users translate a diagram (e.g. flowchart) into a graph model.",
-            instruction=get_prompt("spanner_schema_to_model_instructions"),
+            description="An agent that help users translate Spanner schema (e.g. tables) into a graph model.",
+            instruction=get_prompt("spanner_schema_to_model"),
             tools=[],
         )
 

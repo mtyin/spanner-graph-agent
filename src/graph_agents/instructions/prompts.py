@@ -21,17 +21,17 @@ PROMPT_FILES = {
     # Graph
     "graph_agent_description": "GRAPH_AGENT_DESCRIPTION.md",
     "graph_agent_instructions": "GRAPH_AGENT_INSTRUCTIONS.md",
-    # schema Orchestrator
+    # Schema Orchestrator
     "schema_orchestrator": "schema/orchestrator.md",
-    # schema ERDiagram2Model
+    # Schema ERDiagram2Model
     "er_diagram_to_model": "schema/to_model/er_diagram_to_model.md",
-    # schema NL2Model
+    # Schema NL2Model
     "nl_to_model": "schema/to_model/nl_to_model.md",
-    # schema SpannerSchema2Model
+    # Schema SpannerSchema2Model
     "spanner_schema_to_model": "schema/to_model/spanner_schema_to_model.md",
-    # schema Model2SpannerSchema
+    # Schema Model2SpannerSchema
     "model_to_spanner_schema": "schema/to_schema/model_to_spanner_schema.md",
-    # construction Flowchart2Data
+    # Construction Flowchart2Data
     "flowchart_to_data": "construction/flowchart_to_data.md",
 }
 
