@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from graph_agents.agents import GraphAgent, GraphModellingAgent, SpannerGraphQueryAgent
+from graph_agents.agents import GraphAgent, SpannerGraphQueryAgent
