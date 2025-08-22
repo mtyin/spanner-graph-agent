@@ -30,8 +30,8 @@ class GraphSchemaAgent(LlmAgent):
         super().__init__(
             model=model,
             name="GraphSchemaAgent",
-            description=get_prompt("GRAPH_SCHEMA_DESCRIPTION"),
-            instruction=get_prompt("GRAPH_SCHEMA_INSTRUCTIONS"),
+            description=get_prompt("SCHEMA_ORCHESTRATOR_DESCRIPTION"),
+            instruction=get_prompt("SCHEMA_ORCHESTRATOR_INSTRUCTIONS"),
             tools=[],
             sub_agents=[
                 NL2ModelAgent(model),
