@@ -53,7 +53,7 @@ class Model2SpannerSchemaAgent(LlmAgent):
         super().__init__(
             model=model,
             name="Model2SpannerSchemaAgent",
-            description=get_prompt("MODEL_TO_SPANNER_SCHEMA_DESCRIPTION"),
-            instruction=get_prompt("MODEL_TO_SPANNER_SCHEMA_INSTRUCTIONS"),
+            description="An agent that translates a graph model, provided in a specific JSON format, into a Spanner Graph schema.",
+            instruction=get_prompt("model_to_spanner_schema_instructions"),
             tools=[],
         )

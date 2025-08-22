@@ -1,1 +1,0 @@
-An agent that interactively help users translate natural language descriptions of data structures into a formal, structured graph model.

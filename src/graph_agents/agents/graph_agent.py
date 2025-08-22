@@ -58,8 +58,8 @@ class GraphAgent(LlmAgent):
         super().__init__(
             model=model,
             name="GraphAgent",
-            description=get_prompt("GRAPH_AGENT_DESCRIPTION"),
-            instruction=get_prompt("GRAPH_AGENT_INSTRUCTIONS"),
+            description=get_prompt("graph_agent_description"),
+            instruction=get_prompt("graph_agent_instructions"),
             tools=[self.add_sub_agent(SpannerGraphQueryAgent.create_query_agent)],
             sub_agents=[GraphSchemaAgent(model)],
         )
