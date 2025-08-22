@@ -1,1 +1,0 @@
-An agent that translates a graph model, provided in a specific JSON format, into a Spanner Graph schema.
