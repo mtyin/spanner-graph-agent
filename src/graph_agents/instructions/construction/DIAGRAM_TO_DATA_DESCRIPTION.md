@@ -1,0 +1,1 @@
+An agent that interactively help users translate a diagram (e.g. flowchart) into graph data.
