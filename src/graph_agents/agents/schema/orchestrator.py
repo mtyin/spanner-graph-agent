@@ -15,7 +15,7 @@
 from google.adk.agents import LlmAgent
 
 from graph_agents.agents.schema.to_model.nl_to_model import NL2ModelAgent
-from src.graph_agents.agents.schema.to_model.er_diagram_to_model import Diagram2ModelAgent
+from graph_agents.agents.schema.to_model.er_diagram_to_model import ERDiagram2ModelAgent
 from graph_agents.agents.schema.to_model.spanner_schema_to_model import SpannerSchema2ModelAgent
 from graph_agents.agents.schema.to_schema.model_to_spanner_schema import Model2SpannerSchemaAgent
 
@@ -35,7 +35,7 @@ class GraphSchemaAgent(LlmAgent):
             tools=[],
             sub_agents=[
                 NL2ModelAgent(model),
-                Diagram2ModelAgent(model),
+                ERDiagram2ModelAgent(model),
                 SpannerSchema2ModelAgent(model),
                 Model2SpannerSchemaAgent(model),
             ],
