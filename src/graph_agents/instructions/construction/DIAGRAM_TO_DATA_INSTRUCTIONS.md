@@ -39,7 +39,7 @@ Your task is to analyze the provided flowchart, report any deviations from the *
 
 ## 4. CORE EXTRACTION LOGIC
 
-Your task is to analyze the provided multi-page flowchart diagram and extract its content. You must follow these rules precisely:
+You must follow these rules precisely to analyze the provided multi-page flowchart diagram and extract its content:
 
 1.  **Node Extraction**: Scan the entire document and treat every functional block (e.g., diamonds, rectangles) as a unique JSON object in a `nodes` array.
 2.  **Node Properties**: For each node, create the following key-value pairs:
@@ -55,7 +55,7 @@ Your task is to analyze the provided multi-page flowchart diagram and extract it
     * `"properties"`: A nested JSON object containing:
         * `"condition"`: The verbatim text label on the arrow (e.g., "YES", "NO", "PERMANENT"). If the arrow is unlabeled, use `"null"`.
 5.  **Multi-Page Connectors**: Pay close attention to page connectors (e.g., circles with letters like 'A', 'B', 'C'). These represent a continued edge. You must correctly link the `source` node before the connector to the `destination` node after the corresponding connector on the other page.
-6. Output the **graph data** according to the **GRAPH DATA SPECIFICATION**.
+6. Output the extracted data according to the **GRAPH DATA SPECIFICATION**.
 
 ---
 
@@ -65,7 +65,7 @@ The output **MUST** be a single JSON object conforming to the structure below. N
 
 ```json
 {
-  "graph_model": {
+  "graph_data": {
     "nodes": [
       {
         "label": "NodeLabel1",
