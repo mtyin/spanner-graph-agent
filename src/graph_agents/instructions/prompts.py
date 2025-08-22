@@ -19,14 +19,14 @@ from jinja2 import Template
 
 PROMPT_FILES = {
     # Graph
-    "GRAPH_AGENT_DESCRIPTION": "GRAPH_AGENT_DESCRIPTION.md",
-    "GRAPH_AGENT_INSTRUCTIONS": "GRAPH_AGENT_INSTRUCTIONS.md",
+    "graph_agent_description": "GRAPH_AGENT_DESCRIPTION.md",
+    "graph_agent_instructions": "GRAPH_AGENT_INSTRUCTIONS.md",
     # schema Orchestrator
     "schema_orchestrator_description": "schema/orchestrator_description.md",
     "schema_orchestrator_instructions": "schema/orchestrator_instructions.md",
     # schema Diagram2Model
-    "diagram_to_model_description": "schema/to_model/from_er_description.md",
-    "diagram_to_model_instructions": "schema/to_model/from_er_instructions.md",
+    "er_diagram_to_model_description": "schema/to_model/from_er_diagram_description.md",
+    "er_diagram_to_model_instructions": "schema/to_model/from_er_diagram_instructions.md",
     # schema Ml2Model
     "nl_to_model_description": "schema/to_model/from_nl_description.md",
     "nl_to_model_instructions": "schema/to_model/from_nl_instructions.md",
