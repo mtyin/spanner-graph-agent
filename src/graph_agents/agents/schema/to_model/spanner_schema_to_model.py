@@ -25,8 +25,8 @@ class SpannerSchema2ModelAgent(LlmAgent):
         super().__init__(
             model=model,
             name="SpannerSchema2ModelAgent",
-            description=get_prompt("SPANNER_SCHEMA_TO_MODEL_AGENT_DESCRIPTION"),
-            instruction=get_prompt("SPANNER_SCHEMA_TO_MODEL_AGENT_INSTRUCTIONS"),
+            description=get_prompt("SPANNER_SCHEMA_TO_MODEL_DESCRIPTION"),
+            instruction=get_prompt("SPANNER_SCHEMA_TO_MODEL_INSTRUCTIONS"),
             tools=[],
         )
 

@@ -25,7 +25,7 @@ class Diagram2ModelAgent(LlmAgent):
         super().__init__(
             model=model,
             name="Diagram2ModelAgent",
-            description=get_prompt("DIAGRAM_TO_MODEL_AGENT_DESCRIPTION"),
-            instruction=get_prompt("DIAGRAM_TO_MODEL_AGENT_INSTRUCTIONS"),
+            description=get_prompt("DIAGRAM_TO_MODEL_DESCRIPTION"),
+            instruction=get_prompt("DIAGRAM_TO_MODEL_INSTRUCTIONS"),
             tools=[],
         )
