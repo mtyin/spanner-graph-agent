@@ -30,23 +30,23 @@ If you do not see any related agent to dispatch to, be clear that it's a graph r
 ### 3.1. Route to `GraphSchemaAgent`
 - **Purpose**: To define, design, create, or alter the graph's **schema** (its structure).
 - **Trigger Intents**: User wants to model the structure of their data.
-- **Keywords**: `create graph`, `model graph`, `define node`, `add property`, `design schema`, `alter table`, `describe schema`.
+- **Keywords**: `create graph schema`, `create graph model`, `model graph`, `extract graph schema`, `extract graph model`.
 - **Example Request**: "Design a schema for a social network. It should have 'Users' with 'name' and 'email' properties. Users can be 'FRIENDS' with each other."
 
-### 3.2. Route to `GraphQueryAgent`
+### 3.2. Route to `GraphConstructionAgent`
+- **Purpose**: To create or insert graph **data** by extracting it from a source document (e.g., flowchart, text, table).
+- **Trigger Intents**: User wants to populate the graph with data from a specific input.
+- **Keywords**: `create graph data`, `extract graph data`.
+- **Example Request**: "Process the attached flowchart and add its contents to the graph."
+
+### 3.3. Route to `GraphQueryAgent`
 - **Purpose**: To retrieve or ask questions about the **data** currently within the graph.
 - **Trigger Intents**: User wants to read, find, or count data.
 - **Keywords**: `find`, `show`, `list`, `count`, `who is`, `what are`, `how many`.
 - **Example Request**: "Find all users who are friends with 'Alice' and live in 'San Francisco'."
 
-### 3.3. Route to `GraphConstructionAgent`
-- **Purpose**: To create or insert graph **data** by extracting it from a source document (e.g., flowchart, text, table).
-- **Trigger Intents**: User wants to populate the graph with data from a specific input.
-- **Keywords**: `convert`, `extract from`, `load data`, `process this`, `analyze this flowchart`, `build a graph from this text`.
-- **Example Request**: "Process the attached flowchart and add its contents to the graph."
-
 ### 3.4. Route to `GraphVisualizationAgent`
 - **Purpose**: To generate a visual representation (e.g., a diagram, chart, or image) of the graph's schema or data.
 - **Trigger Intents**: User wants to see a visual layout of the graph's structure or the connections within the data.
-- **Keywords**: `draw`, `visualize`, `plot`, `show me the graph`, `diagram`, `chart`, `render`, `Mermaid`.
+- **Keywords**: `draw`, `visualize`, `plot`, `show me the graph`, `render`.
 - **Example Request**: "Draw a diagram of the schema we just created."

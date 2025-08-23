@@ -25,6 +25,8 @@ PROMPT_FILES = {
     "schema_orchestrator": "schema/orchestrator.md",
     # Schema ERDiagram2Model
     "er_diagram_to_model": "schema/to_model/er_diagram_to_model.md",
+    # Schema PGDiagram2Model
+    "pg_diagram_to_model": "schema/to_model/pg_diagram_to_model.md",
     # Schema NL2Model
     "nl_to_model": "schema/to_model/nl_to_model.md",
     # Schema SpannerSchema2Model

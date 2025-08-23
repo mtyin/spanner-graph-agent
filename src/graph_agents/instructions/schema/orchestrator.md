@@ -52,7 +52,15 @@ You must use the following logic to decide which sub-agent to invoke.
 * **User Prompt Characteristics**: The user's request will reference an ER diagram or use notation-specific terms.
 * **Keywords**: `ER diagram`, `ERD`, `entity-relationship`, `convert my ER diagram`, `Crow's Foot`
 
-### 3.3. Delegate to `SpannerSchema2ModelAgent`
+### 3.3. Delegate to `PGDiamgram2ModelAgent`
+
+* **Trigger Intent**: The user wants to convert a visual or described **Property Graph Diagram** into a graph model.
+* **Input**: An image file (e.g., PNG, JPG), a PDF, or a textual description of a property graph diagram.
+* **Output**: A structured **JSON object** representing the graph model.
+* **User Prompt Characteristics**: The user's request will reference an property graph diagram or use notation-specific terms.
+* **Keywords**: `property graph diagram`
+
+### 3.4. Delegate to `SpannerSchema2ModelAgent`
 
 * **Trigger Intent**: The user wants to reverse-engineer a graph model from an existing set of database tables.
 * **Input**: A text file or snippet containing **Spanner DDL** (`CREATE TABLE` statements).
@@ -60,7 +68,7 @@ You must use the following logic to decide which sub-agent to invoke.
 * **User Prompt Characteristics**: The user's input contains formal code definitions for database tables.
 * **Keywords**: `CREATE TABLE`, `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL`, `STRING`, `INT64`.
 
-### 3.4. Delegate to `Model2SpannerSchemaAgent`
+### 3.5. Delegate to `Model2SpannerSchemaAgent`
 
 * **Trigger Intent**: The user wants to generate a relational database schema (**Spanner DDL**) from a conceptual graph model.
 * **Input**: A structured **JSON object** representing a graph model.
