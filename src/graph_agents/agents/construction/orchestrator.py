@@ -15,9 +15,10 @@
 from google.adk.agents import LlmAgent
 
 from graph_agents.instructions.prompts import get_prompt
-from graph_agents.tools.visualization.mermaid import convert_graph_json_to_mermaid
 
-class Flowchart2DataAgent(LlmAgent):
+from graph_agents.agents.construction.flowchart_to_data import Flowchart2DataAgent
+
+class GraphConstructionAgent(LlmAgent):
 
     def __init__(
         self,
@@ -25,10 +26,11 @@ class Flowchart2DataAgent(LlmAgent):
     ):
         super().__init__(
             model=model,
-            name="Flowchart2DataAgent",
-            description="An agent that helps users extract a flowchart into a property graph.",
-            instruction=get_prompt("flowchart_to_data"),
-            tools=[
-            #    convert_graph_json_to_mermaid
+            name="GraphConstructionAgent",
+            description="An agent specialized in all graph construction-related operations",
+            instruction=get_prompt("construction_orchestrator"),
+            tools=[],
+            sub_agents=[
+                Flowchart2DataAgent(model),
             ],
         )

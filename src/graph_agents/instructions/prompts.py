@@ -31,6 +31,8 @@ PROMPT_FILES = {
     "spanner_schema_to_model": "schema/to_model/spanner_schema_to_model.md",
     # Schema Model2SpannerSchema
     "model_to_spanner_schema": "schema/to_schema/model_to_spanner_schema.md",
+     # Construction Orchestrator
+    "construction_orchestrator": "construction/orchestrator.md",
     # Construction Flowchart2Data
     "flowchart_to_data": "construction/flowchart_to_data.md",
 }

@@ -38,3 +38,9 @@ If you do not see any related agent to dispatch to, be clear that it's a graph r
 - **Trigger Intents**: User wants to read, find, or count data.
 - **Keywords**: `find`, `show`, `list`, `count`, `who is`, `what are`, `how many`.
 - **Example Request**: "Find all users who are friends with 'Alice' and live in 'San Francisco'."
+
+### 3.3. Route to `GraphConstructionAgent`
+- **Purpose**: To create or insert graph **data** by extracting it from a source document (e.g., flowchart, text, table).
+- **Trigger Intents**: User wants to populate the graph with data from a specific input.
+- **Keywords**: `convert`, `extract from`, `load data`, `process this`, `analyze this flowchart`, `build a graph from this text`.
+- **Example Request**: "Process the attached flowchart and add its contents to the graph."

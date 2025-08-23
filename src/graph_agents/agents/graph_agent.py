@@ -18,6 +18,8 @@ from typing import Optional
 from google.adk.agents import LlmAgent
 
 from graph_agents.agents.schema import GraphSchemaAgent
+from graph_agents.agents.construction import GraphConstructionAgent
+
 from graph_agents.agents.query import SpannerGraphQueryAgent
 from graph_agents.instructions.prompts import get_prompt
 
@@ -61,7 +63,7 @@ class GraphAgent(LlmAgent):
             description=get_prompt("graph_agent_description"),
             instruction=get_prompt("graph_agent_instructions"),
             tools=[self.add_sub_agent(SpannerGraphQueryAgent.create_query_agent)],
-            sub_agents=[GraphSchemaAgent(model)],
+            sub_agents=[GraphSchemaAgent(model), GraphConstructionAgent(model)],
         )
 
     def add_sub_agent(self, agent_factory):
