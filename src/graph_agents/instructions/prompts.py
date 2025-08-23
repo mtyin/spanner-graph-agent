@@ -35,6 +35,8 @@ PROMPT_FILES = {
     "construction_orchestrator": "construction/orchestrator.md",
     # Construction Flowchart2Data
     "flowchart_to_data": "construction/flowchart_to_data.md",
+    # Visualization Orchestrator
+    "visualization_orchestrator": "visualization/orchestrator.md",
 }
 
 def _load_template(filename: str) -> Template:
