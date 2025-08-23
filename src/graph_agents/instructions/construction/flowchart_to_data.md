@@ -76,29 +76,32 @@ The output **MUST** be a single JSON object conforming to the structure and exam
   "graph": {
     "nodes": [
       {
-        "id": "node_1",
-        "label": "Decision",
-        "properties": {
-          "text": "Is the panel damaged?"
-        }
-      },
-      {
-        "id": "node_2",
-        "label": "Process",
-        "properties": {
-          "text": "Measure L, W, d"
-        }
+        "label": "NodeLabel1",
+        "properties": [
+          {
+            "name": "nodePropertyName1",
+            "dataType": "DataType"
+          },
+          {
+            "name": "nodePropertyName2",
+            "dataType": "DataType"
+          }
+        ]
       }
     ],
     "edges": [
       {
-        "source": "node_1",
-        "destination": "node_2",
-        "label": "FLOWS_TO",
-        "properties": {
-          "condition": "YES"
-        }
+        "label": "EdgeLabel1",
+        "source": "SourceNodeLabel",
+        "destination": "DestinationNodeLabel",
+        "properties": [
+          {
+            "name": "edgePropertyName1",
+            "dataType": "DataType"
+          }
+        ]
       }
     ]
   }
 }
+```

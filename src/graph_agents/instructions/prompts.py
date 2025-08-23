@@ -21,6 +21,7 @@ PROMPT_FILES = {
     # Graph
     "graph_agent_description": "GRAPH_AGENT_DESCRIPTION.md",
     "graph_agent_instructions": "GRAPH_AGENT_INSTRUCTIONS.md",
+
     # Schema Orchestrator
     "schema_orchestrator": "schema/orchestrator.md",
     # Schema ERDiagram2Model
@@ -33,10 +34,14 @@ PROMPT_FILES = {
     "spanner_schema_to_model": "schema/to_model/spanner_schema_to_model.md",
     # Schema Model2SpannerSchema
     "model_to_spanner_schema": "schema/to_schema/model_to_spanner_schema.md",
-     # Construction Orchestrator
+
+    # Construction Orchestrator
     "construction_orchestrator": "construction/orchestrator.md",
     # Construction Flowchart2Data
     "flowchart_to_data": "construction/flowchart_to_data.md",
+    # Construction PGDiagram2Data
+    "pg_diagram_to_data": "construction/pg_diagram_to_data.md",
+
     # Visualization Orchestrator
     "visualization_orchestrator": "visualization/orchestrator.md",
 }

@@ -32,3 +32,10 @@ You must use the following logic to decide which sub-agent to invoke.
 * **Trigger Intent**: The user wants to convert a flowchart diagram into graph data.
 * **Input Characteristics**: The user's input is a **flowchart diagram**, likely in an image or document format (e.g., PDF, PNG, JPG).
 * **Keywords**: Look for phrases like "process this flowchart", "convert this diagram into a graph", "extract the nodes and edges from this flowchart", "analyze this flowchart".
+
+
+### 3.1. Delegate to `PGDiagram2DataAgent`
+
+* **Trigger Intent**: The user wants to convert a property graph diagram into graph data.
+* **Input Characteristics**: The user's input is a **property graph diagram**, likely in an image or document format (e.g., PDF, PNG, JPG).
+* **Keywords**:

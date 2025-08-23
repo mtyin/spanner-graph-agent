@@ -16,7 +16,7 @@ from google.adk.agents import LlmAgent
 
 from graph_agents.instructions.prompts import get_prompt
 
-class PGDiagram2ModelAgent(LlmAgent):
+class PGDiagram2DataAgent(LlmAgent):
 
     def __init__(
         self,
@@ -25,7 +25,7 @@ class PGDiagram2ModelAgent(LlmAgent):
         super().__init__(
             model=model,
             name="PGDiagram2ModelAgent",
-            description="An agent that helps users translate a property graph diagram into a graph model.",
+            description="An agent that helps users translate a property graph diagram into a graph data.",
             instruction=get_prompt("pg_diagram_to_data"),
             tools=[],
         )
