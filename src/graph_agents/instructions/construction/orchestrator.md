@@ -38,4 +38,4 @@ You must use the following logic to decide which sub-agent to invoke.
 
 * **Trigger Intent**: The user wants to convert a property graph diagram into graph data.
 * **Input Characteristics**: The user's input is a **property graph diagram**, likely in an image or document format (e.g., PDF, PNG, JPG).
-* **Keywords**:
+* **Keywords**: Look for phrases like  "extract the data from this graph diagram".

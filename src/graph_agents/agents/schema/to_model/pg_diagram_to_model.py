@@ -26,6 +26,6 @@ class PGDiagram2ModelAgent(LlmAgent):
             model=model,
             name="PGDiagram2ModelAgent",
             description="An agent that helps users translate a property graph diagram into a graph model.",
-            instruction=get_prompt("pg_diagram_to_data"),
+            instruction=get_prompt("pg_diagram_to_model"),
             tools=[],
         )
