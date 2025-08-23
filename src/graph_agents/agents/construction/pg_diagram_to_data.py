@@ -25,7 +25,7 @@ class PGDiagram2DataAgent(LlmAgent):
         super().__init__(
             model=model,
             name="PGDiagram2ModelAgent",
-            description="An agent that helps users translate a property graph diagram into a graph data.",
+            description="An agent that helps users translate a property graph diagram into property graph data.",
             instruction=get_prompt("pg_diagram_to_data"),
             tools=[],
         )

@@ -15,7 +15,6 @@
 from google.adk.agents import LlmAgent
 
 from graph_agents.instructions.prompts import get_prompt
-from graph_agents.tools.visualization.mermaid import convert_graph_json_to_mermaid
 
 class Flowchart2DataAgent(LlmAgent):
 
@@ -26,9 +25,7 @@ class Flowchart2DataAgent(LlmAgent):
         super().__init__(
             model=model,
             name="Flowchart2DataAgent",
-            description="An agent that helps users extract a flowchart into a property graph.",
+            description="An agent that helps users extract a flowchart into property graph data.",
             instruction=get_prompt("flowchart_to_data"),
-            tools=[
-            #    convert_graph_json_to_mermaid
-            ],
+            tools=[],
         )

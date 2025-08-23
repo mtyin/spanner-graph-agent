@@ -17,6 +17,7 @@ from google.adk.agents import LlmAgent
 from graph_agents.instructions.prompts import get_prompt
 
 from graph_agents.agents.construction.flowchart_to_data import Flowchart2DataAgent
+from graph_agents.agents.construction.pg_diagram_to_data import PGDiagram2DataAgent
 
 class GraphConstructionAgent(LlmAgent):
 
@@ -32,5 +33,6 @@ class GraphConstructionAgent(LlmAgent):
             tools=[],
             sub_agents=[
                 Flowchart2DataAgent(model),
+                PGDiagram2DataAgent(model),
             ],
         )
