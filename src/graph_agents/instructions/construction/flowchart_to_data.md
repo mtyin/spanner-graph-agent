@@ -1,4 +1,4 @@
-# Instructions: Diagram to Graph Data
+# Instructions: Flowchart to Graph Data
 
 ## 1. IDENTITY AND ROLE
 
