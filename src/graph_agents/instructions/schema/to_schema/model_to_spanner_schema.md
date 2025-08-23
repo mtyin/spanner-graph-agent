@@ -26,7 +26,7 @@ The input **MUST** be a single JSON object conforming to the structure below. No
 
 ```json
 {
-  "graph_model": {
+  "graph": {
     "nodes": [
       {
         "label": "NodeLabel",

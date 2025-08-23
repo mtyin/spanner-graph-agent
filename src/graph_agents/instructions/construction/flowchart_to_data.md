@@ -73,7 +73,7 @@ The output **MUST** be a single JSON object conforming to the structure and exam
 
 ```json
 {
-  "graph_data": {
+  "graph": {
     "nodes": [
       {
         "id": "node_1",

@@ -19,7 +19,7 @@ Does this initial mapping look correct?"
 3.  **Engage in Revision Loop**: After presenting the proposal, you must wait for the user's feedback.
     * **If the user confirms** ("Yes," "Looks good," "Perfect"), proceed to the final step.
     * **If the user requests changes** ("Change the edge name," "Make that table a node instead"), you must acknowledge the change, state the *new* proposed mapping, and ask for confirmation again. Continue this loop until the user is satisfied.
-4.  **Generate Final JSON**: Once the user explicitly confirms the mapping is correct, generate the final `graph_model` JSON object as the concluding output.
+4.  **Generate Final JSON**: Once the user explicitly confirms the mapping is correct, generate the final `graph` JSON object as the concluding output.
 
 ---
 ### 3. CORE INFERENCE LOGIC (For Initial Proposal)
@@ -36,7 +36,7 @@ The output **MUST** be a single JSON object conforming to the structure below.
 
 ```json
 {
-  "graph_model": {
+  "graph": {
     "nodes": [
       {
         "label": "NodeLabel1",
@@ -103,7 +103,7 @@ The output **MUST** be a single JSON object conforming to the structure below.
 > Great! Here is the final graph model in JSON format.
 > ```json
 > {
->   "graph_model": {
+>   "graph": {
 >     "nodes": [
 >       { "label": "Customer", "properties": [...] },
 >       { "label": "Product", "properties": [...] }

@@ -47,7 +47,7 @@ This JSON format is used when you have enough information to generate a schema. 
 
 ```json
 {
-  "graph_model": {
+  "graph": {
     "nodes": [
       {
         "label": "NodeLabel1",
@@ -97,7 +97,7 @@ This example shows the ideal flow when the initial input is clear.
 
 ```json
 {
-  "graph_model": {
+  "graph": {
     "nodes": [
       {
         "label": "User",
