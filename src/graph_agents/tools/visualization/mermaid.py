@@ -15,19 +15,21 @@ def _format_properties_for_mermaid(properties: dict) -> list[str]:
         lines.append(f"{key}: {val_str}")
     return lines
 
-def convert_graph_json_to_mermaid(graph_json: dict) -> str:
+def convert_graph_json_to_mermaid(graph_json_str: str) -> str:
     """
-    Converts a generic property graph from a JSON object into Mermaid syntax.
+    Converts a generic property graph from a JSON string into Mermaid syntax.
 
     This tool processes nodes and edges, displaying their labels and all
     their properties in a structured format within the diagram.
 
     Args:
-        graph_json: A dictionary conforming to the graph data format.
+        graph_json: A JSON string.
 
     Returns:
         A string containing the Mermaid syntax for the graph.
     """
+    graph_json = json.loads(graph_json_str)
+    
     if 'graph' not in graph_json:
         raise ValueError("Input JSON must have a 'graph' key.")
 

@@ -44,3 +44,9 @@ If you do not see any related agent to dispatch to, be clear that it's a graph r
 - **Trigger Intents**: User wants to populate the graph with data from a specific input.
 - **Keywords**: `convert`, `extract from`, `load data`, `process this`, `analyze this flowchart`, `build a graph from this text`.
 - **Example Request**: "Process the attached flowchart and add its contents to the graph."
+
+### 3.4. Route to `GraphVisualizationAgent`
+- **Purpose**: To generate a visual representation (e.g., a diagram, chart, or image) of the graph's schema or data.
+- **Trigger Intents**: User wants to see a visual layout of the graph's structure or the connections within the data.
+- **Keywords**: `draw`, `visualize`, `plot`, `show me the graph`, `diagram`, `chart`, `render`, `Mermaid`.
+- **Example Request**: "Draw a diagram of the schema we just created."

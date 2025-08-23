@@ -19,6 +19,7 @@ from google.adk.agents import LlmAgent
 
 from graph_agents.agents.schema import GraphSchemaAgent
 from graph_agents.agents.construction import GraphConstructionAgent
+from graph_agents.agents.visualization import GraphVisualizationAgent 
 from graph_agents.agents.query import SpannerGraphQueryAgent
 
 from graph_agents.instructions.prompts import get_prompt
@@ -65,7 +66,8 @@ class GraphAgent(LlmAgent):
             tools=[self.add_sub_agent(SpannerGraphQueryAgent.create_query_agent)],
             sub_agents=[
                 GraphSchemaAgent(model), 
-                GraphConstructionAgent(model)
+                GraphConstructionAgent(model),
+                GraphVisualizationAgent(model),
             ],
         )
 
