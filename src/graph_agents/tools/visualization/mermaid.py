@@ -41,8 +41,8 @@ def convert_graph_json_to_mermaid(graph_json_str: str) -> str:
 
     # --- Process Nodes ---
     for node in nodes:
-        node_id = node['id']
         node_label = node.get('label', '')
+        node_id = node.get('id', node_label)
         
         content_lines = [f"<strong>{node_label}</strong>"]
         content_lines.extend(_format_properties_for_mermaid(node.get('properties', {})))
