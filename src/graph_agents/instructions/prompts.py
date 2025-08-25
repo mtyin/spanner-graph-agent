@@ -18,7 +18,9 @@ from typing import Any
 from jinja2 import Template
 
 PROMPT_FILES = {
-    # Graph
+    ###############################################################
+    ## Graph
+
     "graph_agent_description": "GRAPH_AGENT_DESCRIPTION.md",
     "graph_agent_instructions": "GRAPH_AGENT_INSTRUCTIONS.md",
 
