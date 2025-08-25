@@ -15,9 +15,9 @@ def _format_properties_for_mermaid(properties: dict) -> list[str]:
         lines.append(f"{key}: {val_str}")
     return lines
 
-def convert_graph_json_to_mermaid(graph_json_str: str) -> str:
+def convert_graph_model_json_to_mermaid(graph_json_str: str) -> str:
     """
-    Converts a generic property graph from a JSON string into Mermaid syntax.
+    Converts a property graph model from a JSON string into Mermaid syntax.
 
     This tool processes nodes and edges, displaying their labels and all
     their properties in a structured format within the diagram.

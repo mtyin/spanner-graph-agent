@@ -14,7 +14,7 @@
 
 from google.adk.agents import LlmAgent
 
-from graph_agents.tools.visualization.mermaid import convert_graph_json_to_mermaid
+from graph_agents.tools.visualization.mermaid import convert_graph_model_json_to_mermaid
 
 from graph_agents.instructions.prompts import get_prompt
 
@@ -30,7 +30,7 @@ class GraphVisualizationAgent(LlmAgent):
             description="An agent specialized in all graph visualization-related operations",
             instruction=get_prompt("visualization_orchestrator"),
             tools=[
-                convert_graph_json_to_mermaid
+                convert_graph_model_json_to_mermaid
             ],
             sub_agents=[
             ],
