@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Any, Dict, Generator, List
 
+from google.cloud.spanner_v1 import JsonObject
 from typing_extensions import override
 
 from graph_agents.utils.embeddings import Embeddings
@@ -25,9 +26,7 @@ class SpannerExampleStore(ExampleStore):
                       id INT64 NOT NULL AS (FARM_FINGERPRINT(description)) STORED,
                       description STRING(MAX) NOT NULL,
                       description_embeddings ARRAY<FLOAT32> NOT NULL,
-                      graph_query STRING(MAX) NOT NULL,
-                      schema STRING(MAX) NOT NULL,
-                      error_graph_query STRING(MAX),
+                      example JSON NOT NULL,
                     ) PRIMARY KEY (id)"""
             ],
             **kwargs,
@@ -61,9 +60,9 @@ class SpannerExampleStore(ExampleStore):
             return []
         query_results = self.engine.query(
             f"""
-        SELECT description, graph_query, schema, COSINE_DISTANCE(description_embeddings, @embeddings) AS distance
+        SELECT description, example, COSINE_DISTANCE(description_embeddings, @embeddings) AS distance
         FROM {self.example_table}
-        WHERE description_embeddings IS NOT NULL AND error_graph_query IS NULL
+        WHERE description_embeddings IS NOT NULL AND example.error_graph_query IS NULL
         ORDER BY distance
         LIMIT {k}""",
             params={"embeddings": embeddings[0]},
@@ -77,7 +76,7 @@ class SpannerExampleStore(ExampleStore):
         # query overview.
         return [
             QueryExample(
-                query=result["graph_query"],
+                query=result["example"]["graph_query"],
                 description=result["description"],
             )
             for result in query_results.results
@@ -99,12 +98,11 @@ class SpannerExampleStore(ExampleStore):
             return []
         query_results = self.engine.query(
             f"""
-        SELECT error_graph_query,
-               graph_query,
+        SELECT example,
                description,
                COSINE_DISTANCE(description_embeddings, @embeddings) AS distance
         FROM {self.example_table}
-        WHERE error_graph_query IS NOT NULL
+        WHERE example.error_graph_query IS NOT NULL
         ORDER BY distance
         LIMIT {k}""",
             params={"embeddings": embeddings[0]},
@@ -118,8 +116,8 @@ class SpannerExampleStore(ExampleStore):
         # troubleshoot page.
         return [
             QueryFixExample(
-                bad_query=result["error_graph_query"],
-                correct_query=result["graph_query"],
+                bad_query=result["example"]["error_graph_query"],
+                correct_query=result["example"]["graph_query"],
                 description=result["description"],
             )
             for result in query_results.results
@@ -142,12 +140,15 @@ class SpannerExampleStore(ExampleStore):
             self.example_table,
             [
                 "description",
-                "graph_query",
-                "schema",
+                "example",
                 "description_embeddings",
             ],
             [
-                [example.description, example.query, "", embedding]
+                [
+                    example.description,
+                    JsonObject({"graph_query": example.query, "schema": ""}),
+                    embedding,
+                ]
                 for example, embedding in zip(examples, embeddings)
             ],
         )
@@ -169,18 +170,20 @@ class SpannerExampleStore(ExampleStore):
             self.example_table,
             [
                 "description",
-                "graph_query",
-                "schema",
+                "example",
                 "description_embeddings",
-                "error_graph_query",
             ],
             [
                 [
                     example.description,
-                    example.correct_query,
-                    "",
+                    JsonObject(
+                        {
+                            "graph_query": example.correct_query,
+                            "schema": "",
+                            "error_graph_query": example.bad_query,
+                        }
+                    ),
                     embedding,
-                    example.bad_query,
                 ]
                 for example, embedding in zip(examples, embeddings)
             ],
