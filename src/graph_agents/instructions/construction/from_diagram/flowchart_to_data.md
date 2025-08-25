@@ -79,11 +79,9 @@ The output **MUST** be a single JSON object conforming to the structure and exam
       {
         "id": "Id",
         "label": "NodeLabel",
-        "properties": [
-          {
-            "name": "value",
-          }
-        ]
+        "properties": {
+          "key": "value",
+        }
       }
     ],
     "edges": [
@@ -91,12 +89,10 @@ The output **MUST** be a single JSON object conforming to the structure and exam
         "id": "Id",
         "label": "EdgeLabel",
         "source": "SourceNodeId",
-        "destination": "DestinationNodId",
-        "properties": [
-          {
-            "name": "value",
-          }
-        ]
+        "destination": "DestinationNodeId",
+        "properties": {
+          "key": "value",
+        }
       }
     ]
   }

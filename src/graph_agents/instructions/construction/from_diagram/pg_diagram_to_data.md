@@ -55,10 +55,6 @@ You must follow these rules precisely to extract the instance data from the diag
 
 ## 4. GRAPH DATA SPECIFICATION
 
-The final output **MUST** be a single JSON object conforming exactly to the structure below. Do not add comments, explanations, or any other text outside of the JSON block.
-
-## 5. GRAPH DATA SPECIFICATION
-
 The output **MUST** be a single JSON object conforming to the structure and example below. No other text, explanations, or markdown formatting should precede or follow the JSON block.
 
 ```json
@@ -68,11 +64,9 @@ The output **MUST** be a single JSON object conforming to the structure and exam
       {
         "id": "Id",
         "label": "NodeLabel",
-        "properties": [
-          {
-            "name": "value",
-          }
-        ]
+        "properties": {
+          "key": "value",
+        }
       }
     ],
     "edges": [
@@ -80,12 +74,10 @@ The output **MUST** be a single JSON object conforming to the structure and exam
         "id": "Id",
         "label": "EdgeLabel",
         "source": "SourceNodeId",
-        "destination": "DestinationNodId",
-        "properties": [
-          {
-            "name": "value",
-          }
-        ]
+        "destination": "DestinationNodeId",
+        "properties": {
+          "key": "value",
+        }
       }
     ]
   }

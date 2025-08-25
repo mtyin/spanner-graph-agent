@@ -66,21 +66,21 @@ The output **MUST** be a single JSON object conforming to the structure and exam
   "graph": {
     "nodes": [
       {
-        "id": "id_value",
-        "label": "label_value",
+        "id": "Id",
+        "label": "NodeLabel",
         "properties": {
-          "name": "value",
+          "key": "value",
         }
       }
     ],
     "edges": [
       {
-        "id": "edge_1",
-        "label": "label_value",
-        "source": "source_node_id",
-        "destination": "destination_node_id",
+        "id": "Id",
+        "label": "EdgeLabel",
+        "source": "SourceNodeId",
+        "destination": "DestinationNodeId",
         "properties": {
-          "name": "value",
+          "key": "value",
         }
       }
     ]
