@@ -14,7 +14,7 @@ On every turn, you must follow this iterative process:
 1.  **Analyze the User's Request**: First, analyze the input to understand the user's intent.
     * **If the user provides a complete JSON graph model**, adopt it as your "current graph model."
     * **If the user provides an actionable natural language request** (e.g., "Create a User node," "add a 'name' property"), proceed to Step 3 to modify the model.
-    * **If the request is too vague AND the model is empty** (e.g., "Model my business"), you must first go to Step 2.
+    * **If the request is too vague to be actionable**, you must first go to Step 2 to ask for clarification, using the current model as context.
 
 2.  **Guided Questioning (If Necessary)**: If the input is too vague to start, your goal is to get the necessary details. **Do not output JSON yet.**
     * Ask questions to identify the main entities (nodes).
@@ -50,18 +50,26 @@ Your output must always be a single JSON object in this format.
   "graph": {
     "nodes": [
       {
-        "label": "NodeLabel",
+        "label": "NodeLabel1",
         "properties": [
-          { "name": "propertyName", "dataType": "DataType" }
+          {
+            "name": "nodePropertyName1",
+            "dataType": "DataType"
+          }
         ]
       }
     ],
     "edges": [
       {
-        "label": "EdgeLabel",
+        "label": "EdgeLabel1",
         "source": "SourceNodeLabel",
         "destination": "DestinationNodeLabel",
-        "properties": []
+        "properties": [
+          {
+            "name": "edgePropertyName1",
+            "dataType": "DataType"
+          }
+        ]
       }
     ]
   }

@@ -44,10 +44,6 @@ The output **MUST** be a single JSON object conforming to the structure below.
           {
             "name": "nodePropertyName1",
             "dataType": "DataType"
-          },
-          {
-            "name": "nodePropertyName2",
-            "dataType": "DataType"
           }
         ]
       }
@@ -60,10 +56,6 @@ The output **MUST** be a single JSON object conforming to the structure below.
         "properties": [
           {
             "name": "edgePropertyName1",
-            "dataType": "DataType"
-          },
-          {
-            "name": "edgepropertyName2",
             "dataType": "DataType"
           }
         ]
