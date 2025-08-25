@@ -58,6 +58,7 @@ You must follow these rules precisely to extract the flowchart's content:
         * `"text"`: The complete, verbatim text inside the shape.
 3.  **Edge Extraction**: Identify every arrow connecting two nodes and represent it as a unique JSON object in an `edges` array.
 4.  **Edge Properties**: For each edge, create the following key-value pairs:
+    * `"id"`: A unique, sequential identifier you create (e.g., `"edge_1"`, `"edge_2"`).
     * `"source"`: The `id` of the node where the arrow originates.
     * `"destination"`: The `id` of the node where the arrow terminates.
     * `"label"`: Use the static label `"FLOWS_TO"`.
@@ -76,28 +77,24 @@ The output **MUST** be a single JSON object conforming to the structure and exam
   "graph": {
     "nodes": [
       {
-        "label": "NodeLabel1",
+        "id": "Id",
+        "label": "NodeLabel",
         "properties": [
           {
-            "name": "nodePropertyName1",
-            "dataType": "DataType"
-          },
-          {
-            "name": "nodePropertyName2",
-            "dataType": "DataType"
+            "name": "value",
           }
         ]
       }
     ],
     "edges": [
       {
-        "label": "EdgeLabel1",
-        "source": "SourceNodeLabel",
-        "destination": "DestinationNodeLabel",
+        "id": "Id",
+        "label": "EdgeLabel",
+        "source": "SourceNodeId",
+        "destination": "DestinationNodId",
         "properties": [
           {
-            "name": "edgePropertyName1",
-            "dataType": "DataType"
+            "name": "value",
           }
         ]
       }

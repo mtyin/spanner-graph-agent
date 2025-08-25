@@ -36,8 +36,8 @@ If you do not see any related agent to dispatch to, be clear that it's a graph r
 ### 3.2. Route to `GraphConstructionAgent`
 - **Purpose**: To create or insert graph **data** by extracting it from a source document (e.g., flowchart, text, table).
 - **Trigger Intents**: User wants to populate the graph with data from a specific input.
-- **Keywords**: `create graph data`, `extract graph data`.
-- **Example Request**: "Process the attached flowchart and add its contents to the graph."
+- **Keywords**: `create graph data`, `extract graph data`, `extract the property graph data`, `constract the property graph`
+- **Example Request**: "Process the attached diagram and construct a property graph."
 
 ### 3.3. Route to `GraphQueryAgent`
 - **Purpose**: To retrieve or ask questions about the **data** currently within the graph.

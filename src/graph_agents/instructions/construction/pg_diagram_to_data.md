@@ -38,13 +38,14 @@ You must follow these rules precisely to extract the instance data from the diag
 
 2.  **Node Object Generation**:
     *   `"id"`: Assign a unique, sequential identifier you create (e.g., `"node_1"`, `"node_2"`). If the diagram provides an explicit ID (e.g., a number `1` inside the node), use that to create a consistent ID like `"node_1"`.
-    *   `"label"`: Use the primary text label inside the node shape (e.g., `"Person"`).
+    *   `"label"`: Use the primary text label inside or right beside the node shape (e.g., `"Person"`).
     *   `"properties"`: Create a nested JSON object containing the **exact key-value pairs** shown for that node. You must infer the data types for the values (e.g., `1987` becomes the number `1987`, `"Charles E."` becomes the string `"Charles E."`). If a node has no properties, this must be an empty object `{}`.
 
 3.  **Edge Extraction**:
     *   Treat **every single arrow** connecting two nodes as a unique JSON object in the `edges` array.
 
 4.  **Edge Object Generation**:
+    *   `"id"`: Assign a unique, sequential identifier you create (e.g., `"edge_1"`, `"edge_2"`).
     *   `"source"`: The unique `id` (which you generated in step 2) of the node where the arrow originates.
     *   `"destination"`: The unique `id` of the node where the arrow terminates.
     *   `"label"`: Use the text label on the arrow (e.g., `"KNOWS"`).
@@ -56,33 +57,33 @@ You must follow these rules precisely to extract the instance data from the diag
 
 The final output **MUST** be a single JSON object conforming exactly to the structure below. Do not add comments, explanations, or any other text outside of the JSON block.
 
+## 5. GRAPH DATA SPECIFICATION
+
+The output **MUST** be a single JSON object conforming to the structure and example below. No other text, explanations, or markdown formatting should precede or follow the JSON block.
+
 ```json
 {
   "graph": {
     "nodes": [
       {
-        "label": "NodeLabel1",
+        "id": "Id",
+        "label": "NodeLabel",
         "properties": [
           {
-            "name": "nodePropertyName1",
-            "dataType": "DataType"
-          },
-          {
-            "name": "nodePropertyName2",
-            "dataType": "DataType"
+            "name": "value",
           }
         ]
       }
     ],
     "edges": [
       {
-        "label": "EdgeLabel1",
-        "source": "SourceNodeLabel",
-        "destination": "DestinationNodeLabel",
+        "id": "Id",
+        "label": "EdgeLabel",
+        "source": "SourceNodeId",
+        "destination": "DestinationNodId",
         "properties": [
           {
-            "name": "edgePropertyName1",
-            "dataType": "DataType"
+            "name": "value",
           }
         ]
       }
