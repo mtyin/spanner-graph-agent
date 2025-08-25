@@ -22,27 +22,38 @@ PROMPT_FILES = {
     "graph_agent_description": "GRAPH_AGENT_DESCRIPTION.md",
     "graph_agent_instructions": "GRAPH_AGENT_INSTRUCTIONS.md",
 
-    # Schema Orchestrator
+    ###############################################################
+    ## Schema
+
+    # Orchestrator
     "schema_orchestrator": "schema/orchestrator.md",
-    # Schema ERDiagram2Model
+    # ERDiagram2Model
     "er_diagram_to_model": "schema/to_model/er_diagram_to_model.md",
-    # Schema PGDiagram2Model
+    # PGDiagram2Model
     "pg_diagram_to_model": "schema/to_model/pg_diagram_to_model.md",
-    # Schema NL2Model
+    # NL2Model
     "nl_to_model": "schema/to_model/nl_to_model.md",
-    # Schema SpannerSchema2Model
+    # SpannerSchema2Model
     "spanner_schema_to_model": "schema/to_model/spanner_schema_to_model.md",
-    # Schema Model2SpannerSchema
+    # Model2SpannerSchema
     "model_to_spanner_schema": "schema/to_schema/model_to_spanner_schema.md",
 
-    # Construction Orchestrator
-    "construction_orchestrator": "construction/orchestrator.md",
-    # Construction Flowchart2Data
-    "flowchart_to_data": "construction/flowchart_to_data.md",
-    # Construction PGDiagram2Data
-    "pg_diagram_to_data": "construction/pg_diagram_to_data.md",
+    ###############################################################
+    ## Construction
 
-    # Visualization Orchestrator
+    # Orchestrator
+    "construction_orchestrator": "construction/orchestrator.md",
+    # Flowchart2Data
+    "flowchart_to_data": "construction/from_diagram/flowchart_to_data.md",
+    # PGDiagram2Data
+    "pg_diagram_to_data": "construction/from_diagram/pg_diagram_to_data.md",
+    # Conversation2Data
+    "conversation_to_data": "construction/from_nl/conversation_to_data.md",
+
+    ###############################################################
+    ## Visualization
+
+    # Orchestrator
     "visualization_orchestrator": "visualization/orchestrator.md",
 }
 
